@@ -1,21 +1,16 @@
 package config
 
 import (
+	"chat-server/models"
 	"fmt"
-	"os"
 	"log"
+	"os"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"github.com/joho/godotenv"
 )
 
-var DB *gorm.DB
-
-func InitDB() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
+func InitDB() (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
 		os.Getenv("DB_HOST"),
@@ -26,9 +21,16 @@ func InitDB() {
 	)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
 	if err != nil {
-		panic(fmt.Sprintf("Failed to connect to database: %v", err))
+		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
-	DB = db
-	fmt.Println("Database connected!")
+
+	if err = db.AutoMigrate(
+		&models.Message{},
+	); err != nil {
+		return nil, fmt.Errorf("error migrating models: %w", err)
+	}
+	log.Println("Database connected!")
+	return db, nil
 }

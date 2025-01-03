@@ -46,7 +46,7 @@ export default function Home() {
   }, []);
 
   const fetchMessages = async () => {
-    const response = await fetch('http://localhost:8080/messages');
+    const response = await fetch('/api/messages/');
     const data = await response.json();
     setMessages(data);
   };
