@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { messagesApi } from '@/lib/api/messages';
 import { Message } from '@/types/message';
 import { SendMessageData, WebSocketMessage } from '@/types/websocket';
@@ -12,6 +12,7 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState("");
   const {token, user } = useAuthStore((state) => state)
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { sendMessage: sendWebSocketMessage } = useWebSocket('ws://localhost:8080/ws?access_token=' + token, {
     onOpen: () => {
@@ -55,6 +56,7 @@ export default function Chat() {
 
     sendWebSocketMessage(JSON.stringify(wsMessage));
     setMessage('');
+    inputRef.current?.focus();
   };
 
   return (
@@ -67,6 +69,7 @@ export default function Chat() {
       <div className="p-4 border-t">
         <div className="flex gap-2">
           <Input
+            ref={inputRef}
             type="text"
             className="flex-1"
             placeholder="Enter a message"
