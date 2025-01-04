@@ -3,6 +3,7 @@ package ws
 import (
 	"chat-server/models"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -28,22 +29,7 @@ type Client struct {
 	conn *websocket.Conn
 	hub  *Hub
 	send chan []byte
-}
-
-func (c *Client) readLoop() {
-	defer func() {
-		c.hub.unregister <- c
-		c.conn.Close()
-		close(c.send)
-	}()
-
-	for {
-		_, message, err := c.conn.ReadMessage()
-		if err != nil {
-			break
-		}
-		c.handleMessage(message)
-	}
+	user *models.User
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -119,31 +105,71 @@ func (c *Client) writePump() {
 }
 
 func (c *Client) handleMessage(message []byte) {
-	var msg models.Message
-	if err := json.Unmarshal(message, &msg); err != nil {
+	var wsMessage models.WebSocketMessage
+	if err := json.Unmarshal(message, &wsMessage); err != nil {
 		log.Println("Error unmarshaling message:", err)
 		return
 	}
 
-	err := c.hub.messageService.CreateMessage(&msg)
-	if err != nil {
-		log.Println(err)
+	switch wsMessage.Action {
+	case "send_message":
+		var sendMessageData models.SendMessageData
+		dataBytes, err := json.Marshal(wsMessage.Data)
+		if err != nil {
+			log.Println("Error marshaling data:", err)
+			return
+		}
+
+		if err := json.Unmarshal(dataBytes, &sendMessageData); err != nil {
+			log.Println("Error unmarshaling send message data:", err)
+			return
+		}
+
+		if err := c.handleSendMessage(sendMessageData); err != nil {
+			log.Println(err)
+			return
+		}
+
+	default:
+		log.Printf("Unknown action: %s", wsMessage.Action)
 	}
-	c.hub.broadcast <- message
+}
+
+func (c *Client) handleSendMessage(data models.SendMessageData) error {
+	msg := &models.Message{
+		Content: data.Content,
+		Author:  c.user.Username,
+	}
+
+	if err := c.hub.messageService.CreateMessage(msg); err != nil {
+		return fmt.Errorf("error creating message: %s", err.Message)
+	}
+
+	response, err := json.Marshal(msg)
+	if err != nil {
+		return fmt.Errorf("error marshaling response: %w", err)
+	}
+
+	c.hub.broadcast <- response
+	return nil
 }
 
 // serveWs handles websocket requests from the peer.
-func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, user *models.User) {
 	conn, err := hub.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+
+	client := &Client{
+		hub:  hub,
+		conn: conn,
+		send: make(chan []byte, 256),
+		user: user,
+	}
 	client.hub.register <- client
 
-	// Allow collection of memory referenced by the caller by doing all work in
-	// new goroutines.
 	go client.writePump()
 	go client.readPump()
 }

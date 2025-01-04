@@ -28,9 +28,16 @@ func InitDB() (*gorm.DB, error) {
 
 	if err = db.AutoMigrate(
 		&models.Message{},
+		&models.User{},
 	); err != nil {
 		return nil, fmt.Errorf("error migrating models: %w", err)
 	}
 	log.Println("Database connected!")
 	return db, nil
+}
+
+func GetConfig() map[string]string {
+	return map[string]string{
+		"JWT_SECRET": os.Getenv("JWT_SECRET"),
+	}
 }

@@ -1,9 +1,7 @@
 package models
 
-import "gorm.io/gorm"
-
 type Message struct {
-	gorm.Model
+	BaseModel
 	Author  string `json:"author"`
 	Content string `json:"content"`
 }
@@ -15,7 +13,7 @@ type MessageRepository interface {
 }
 
 type MessageService interface {
-	CreateMessage(message *Message) error
-	GetMessageById(id uint) (*Message, error)
-	GetMessages() ([]Message, error)
+	CreateMessage(message *Message) *AppError
+	GetMessageById(id uint) (*Message, *AppError)
+	GetMessages() ([]Message, *AppError)
 }

@@ -10,15 +10,25 @@ func NewMessageService(messageRepository models.MessageRepository) *messageServi
 	return &messageService{messageRepository: messageRepository}
 }
 
-func (s *messageService) CreateMessage(message *models.Message) error {
-	return s.messageRepository.CreateMessage(message)
+func (s *messageService) CreateMessage(message *models.Message) *models.AppError {
+	if err := s.messageRepository.CreateMessage(message); err != nil {
+		return models.ErrServerError
+	}
+	return nil
 }
 
-func (s *messageService) GetMessageById(id uint) (*models.Message, error) {
-	return s.messageRepository.GetById(id)
+func (s *messageService) GetMessageById(id uint) (*models.Message, *models.AppError) {
+	message, err := s.messageRepository.GetById(id)
+	if err != nil {
+		return nil, models.ErrServerError
+	}
+	return message, nil
 }
 
-func (s *messageService) GetMessages() ([]models.Message, error) {
-	return s.messageRepository.GetMessages()
+func (s *messageService) GetMessages() ([]models.Message, *models.AppError) {
+	messages, err := s.messageRepository.GetMessages()
+	if err != nil {
+		return nil, models.ErrServerError
+	}
+	return messages, nil
 }
-

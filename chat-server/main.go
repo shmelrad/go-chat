@@ -5,6 +5,7 @@ import (
 	"chat-server/repositories"
 	"chat-server/services"
 	"chat-server/handlers"
+	"chat-server/handlers/middlewares"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -18,11 +19,19 @@ func main() {
 	}
 
 	db, err := config.InitDB()
+	config := config.GetConfig()
 
 	router := gin.Default()
+
 	messageRepository := repositories.NewMessageRepository(db)
+	userRepository := repositories.NewUserRepository(db)
+
 	messageService := services.NewMessageService(messageRepository)
-	handlers.InitRoutes(router, messageService)
+	userService := services.NewUserService(userRepository)
+	authService := services.NewAuthService(userRepository, config["JWT_SECRET"])
+	
+	authMiddleware := middlewares.AuthMiddleware(config["JWT_SECRET"], userRepository)
+	handlers.InitRoutes(router, authMiddleware, messageService, userService, authService)
 
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
