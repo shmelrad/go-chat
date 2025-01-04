@@ -13,6 +13,7 @@ export default function Chat() {
   const [message, setMessage] = useState("");
   const {token, user } = useAuthStore((state) => state)
   const inputRef = useRef<HTMLInputElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const { sendMessage: sendWebSocketMessage } = useWebSocket('ws://localhost:8080/ws?access_token=' + token, {
     onOpen: () => {
@@ -30,6 +31,20 @@ export default function Chat() {
       console.log('WebSocket connection closed');
     },
   });
+
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    fetchMessages().then(scrollToBottom);
+  }, []);
 
   useEffect(() => {
     fetchMessages();
@@ -61,10 +76,20 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen">
-      <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-br from-sky-400 to-sky-500">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 bg-gradient-to-br from-sky-400 to-sky-500 scroll-smooth"
+      >
+        <div className="flex flex-col gap-2">
           {messages.map((msg) => (
-            <MessageView key={msg.id} message={msg} isCurrentUser={user?.username === msg.author} side='left'/>
+              <MessageView 
+                key={msg.id}
+                message={msg} 
+                isCurrentUser={user?.username === msg.author} 
+                side='left'
+              />
           ))}
+        </div>
       </div>
       <div className="p-4 border-t">
         <div className="flex gap-2">

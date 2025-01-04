@@ -24,7 +24,7 @@ export default function MessageView({ message, side, isCurrentUser }: MessageVie
     : 'rounded-bl-none'
 
   return (
-    <div className={`flex items-end my-2 gap-2`}>
+    <div className={`flex items-end gap-2`}>
       {!isRight && <MessageAvatar message={message} />}
 
       <div className={`p-2 rounded-lg max-w-[40%] ${messageClassName} ${messageBorderClassName}`}>
