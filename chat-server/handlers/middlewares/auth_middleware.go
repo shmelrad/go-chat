@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// TODO: check claims integrity
 const BEARER_PREFIX = "Bearer "
 func AuthMiddleware(secretKey string, userService models.UserRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
