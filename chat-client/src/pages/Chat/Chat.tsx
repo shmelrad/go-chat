@@ -1,18 +1,14 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useEffect, useRef, useState } from 'react';
 import { messagesApi } from '@/lib/api/messages';
 import { Message } from '@/types/message';
-import { SendMessageData, WebSocketMessage } from '@/types/websocket';
-import useWebSocket from 'react-use-websocket';
 import { useAuthStore } from '@/stores/userStore';
+import useWebSocket from 'react-use-websocket';
 import MessageView from './MessageView';
+import TextEditor from './TextEditor';
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [message, setMessage] = useState("");
-  const {token, user } = useAuthStore((state) => state)
-  const inputRef = useRef<HTMLInputElement>(null);
+  const { token, user } = useAuthStore((state) => state)
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const { sendMessage: sendWebSocketMessage } = useWebSocket('ws://localhost:8080/ws?access_token=' + token, {
@@ -46,10 +42,6 @@ export default function Chat() {
     fetchMessages().then(scrollToBottom);
   }, []);
 
-  useEffect(() => {
-    fetchMessages();
-  }, []);
-
   const fetchMessages = async () => {
     try {
       const { messages } = await messagesApi.getMessages();
@@ -57,21 +49,6 @@ export default function Chat() {
     } catch (error) {
       console.error('Failed to fetch messages:', error);
     }
-  };
-
-  const sendMessage = async () => {
-    if (message.trim() === '') return;
-
-    const wsMessage: WebSocketMessage<SendMessageData> = {
-      action: 'send_message',
-      data: {
-        content: message.trim()
-      }
-    };
-
-    sendWebSocketMessage(JSON.stringify(wsMessage));
-    setMessage('');
-    inputRef.current?.focus();
   };
 
   return (
@@ -82,31 +59,16 @@ export default function Chat() {
       >
         <div className="flex flex-col gap-2">
           {messages.map((msg) => (
-              <MessageView 
-                key={msg.id}
-                message={msg} 
-                isCurrentUser={user?.username === msg.author} 
-                side='left'
-              />
+            <MessageView 
+              key={msg.id}
+              message={msg} 
+              isCurrentUser={user?.username === msg.author} 
+              side='left'
+            />
           ))}
         </div>
       </div>
-      <div className="p-4 border-t">
-        <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            type="text"
-            className="flex-1"
-            placeholder="Enter a message"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-          />
-          <Button onClick={sendMessage}>
-            Send
-          </Button>
-        </div>
-      </div>
+      <TextEditor sendWebSocketMessage={sendWebSocketMessage} />
     </div>
   );
 }
