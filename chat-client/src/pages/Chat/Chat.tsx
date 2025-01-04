@@ -11,7 +11,7 @@ import MessageView from './MessageView';
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState("");
-  const token = useAuthStore((state) => state.token)
+  const {token, user } = useAuthStore((state) => state)
 
   const { sendMessage: sendWebSocketMessage } = useWebSocket('ws://localhost:8080/ws?access_token=' + token, {
     onOpen: () => {
@@ -59,12 +59,10 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen">
-      <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-br from-sky-300 to-sky-400">
-        <div className="flex flex-col-reverse">
+      <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-br from-sky-400 to-sky-500">
           {messages.map((msg) => (
-            <MessageView key={msg.id} message={msg} />
+            <MessageView key={msg.id} message={msg} isCurrentUser={user?.username === msg.author} side='left'/>
           ))}
-        </div>
       </div>
       <div className="p-4 border-t">
         <div className="flex gap-2">
