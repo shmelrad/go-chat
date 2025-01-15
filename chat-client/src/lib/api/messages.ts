@@ -1,7 +1,7 @@
 import { BaseApi } from './base'
 import { Message } from '@/types/message'
 
-interface MessagesResponse {
+export interface MessagesResponse {
   messages: Message[]
 }
 
@@ -10,8 +10,9 @@ class MessagesApi extends BaseApi {
     super('/api/messages')
   }
 
-  getMessages() {
-    return this.get<MessagesResponse>('/', { auth: true })
+  getMessages(chatId?: number) {
+    const params = chatId ? { chat_id: chatId, offset: 0 } : undefined
+    return this.get<MessagesResponse>('/', { auth: true, params })
   }
 }
 

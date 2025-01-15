@@ -1,8 +1,8 @@
-import { useAuthStore } from "@/stores/userStore"
+import { useAuthStore } from "@/stores/authStore"
 
 interface RequestConfig extends RequestInit {
     auth?: boolean
-    params?: Record<string, string>
+    params?: Record<string, string | number>
   }
   
   export interface ApiErrorResponse {
@@ -26,7 +26,7 @@ interface RequestConfig extends RequestInit {
       const url = new URL(`${this.baseUrl}${endpoint}`)
       if (params) {
         Object.entries(params).forEach(([key, value]) => 
-          url.searchParams.append(key, value)
+          url.searchParams.append(key, value.toString())
         )
       }
   
@@ -40,13 +40,13 @@ interface RequestConfig extends RequestInit {
       const text = await response.text()
       const data = text ? JSON.parse(text) : undefined
       
-      if (auth === true && response.status === 401) {
+      if (response.status === 401) {
         useAuthStore.getState().logout()
         window.location.href = '/login'
       }
 
       if (!response.ok) {
-        throw data?.error || 'Unknown error occurred'
+        throw { error: data?.error || 'Unknown error occurred', code: response.status }
       }
   
       return data
