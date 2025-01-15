@@ -27,8 +27,9 @@ func InitDB() (*gorm.DB, error) {
 	}
 
 	if err = db.AutoMigrate(
-		&models.Message{},
-		&models.User{},
+        &models.User{},
+        &models.Chat{}, 
+        &models.Message{},
 	); err != nil {
 		return nil, fmt.Errorf("error migrating models: %w", err)
 	}
