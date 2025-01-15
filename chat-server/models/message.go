@@ -2,18 +2,23 @@ package models
 
 type Message struct {
 	BaseModel
-	Author  string `json:"author"`
 	Content string `json:"content"`
+	UserID  uint   `json:"user_id" gorm:"not null"`
+	ChatID  uint   `json:"chat_id" gorm:"not null;constraint:OnDelete:CASCADE;"`
+}
+
+type MessageDTO struct {
+	Content string `json:"content"`
+	UserID  uint   `json:"user_id" gorm:"not null"`
+	ChatID  uint   `json:"chat_id" gorm:"not null"`
 }
 
 type MessageRepository interface {
 	GetById(id uint) (*Message, error)
-	CreateMessage(message *Message) error
-	GetMessages() ([]Message, error)
+	CreateMessage(messageDTO *MessageDTO) (*Message, error)
+	GetMessageHistory(chatID uint, limit int, offset int) ([]Message, error)
 }
 
 type MessageService interface {
-	CreateMessage(message *Message) *AppError
-	GetMessageById(id uint) (*Message, *AppError)
-	GetMessages() ([]Message, *AppError)
+	GetMessageHistory(chatID uint, limit int, offset int) ([]Message, *AppError)
 }
