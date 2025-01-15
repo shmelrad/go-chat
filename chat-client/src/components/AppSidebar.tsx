@@ -30,12 +30,36 @@ export function AppSidebar() {
     const { data: chats, isError, error } = useQuery({
         queryKey: ['user-chats'],
         queryFn: () => usersApi.getChats(),
-        initialData: { chats: [] }
+        initialData: { chats: [] },
+        select: (data) => ({
+            chats: data.chats.sort((a, b) => {
+                const aTime = a.last_message ? new Date(a.last_message.created_at).getTime() : new Date(a.updated_at).getTime()
+                const bTime = b.last_message ? new Date(b.last_message.created_at).getTime() : new Date(b.updated_at).getTime()
+                return bTime - aTime
+            })
+        })
     })
 
     const searchMutation = useMutation({
         mutationFn: (query: string) => usersApi.searchUsers({ q: query, offset: 0 }),
     })
+
+    const formatTime = (timestamp: string) => {
+        const date = new Date(timestamp)
+        const now = new Date()
+        const diff = now.getTime() - date.getTime()
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+        if (days === 0) {
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+        } else if (days === 1) {
+            return 'Yesterday'
+        } else if (days < 7) {
+            return date.toLocaleDateString('en-US', { weekday: 'short' })
+        } else {
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        }
+    }
 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
@@ -117,28 +141,28 @@ export function AppSidebar() {
                                             <SidebarMenuButton asChild>
                                                 <button
                                                     onClick={() => openChat(chat.id, chat.type, recipient?.username ?? chat.name)}
-                                                    className="flex items-center gap-3 p-2"
+                                                    className="flex items-center gap-3 p-2 w-full"
                                                 >
-                                                    {(() => {
-                                                        console.log(chat)
-                                                        return (
-                                                            <>
-                                                                <Avatar>
-                                                                    <AvatarFallback>{recipient?.username[0]}</AvatarFallback>
-                                                                </Avatar>
-                                                                {!isCollapsed && (
-                                                                    <div className="flex flex-col min-w-0">
-                                                                        <span className="font-medium truncate">
-                                                                            {recipient?.username}
-                                                                        </span>
-                                                                        <span className="text-sm text-muted-foreground truncate">
-                                                                            {chat.last_message?.content ?? "No messages yet"}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                            </>
-                                                        )
-                                                    })()}
+                                                    <Avatar>
+                                                        <AvatarFallback>{recipient?.username[0]}</AvatarFallback>
+                                                    </Avatar>
+                                                    {!isCollapsed && (
+                                                        <div className="flex flex-1 min-w-0">
+                                                            <div className="flex-1">
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className="font-medium truncate">
+                                                                        {recipient?.username}
+                                                                    </span>
+                                                                    <span className="text-xs text-muted-foreground ml-2">
+                                                                        {formatTime(chat.last_message?.created_at ?? chat.updated_at)}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-sm text-muted-foreground truncate block">
+                                                                    {chat.last_message?.content ?? "No messages yet"}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </button>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
