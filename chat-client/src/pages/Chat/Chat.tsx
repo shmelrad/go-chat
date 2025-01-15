@@ -22,10 +22,6 @@ export default function ChatPage() {
   const name = searchParams.get('name')
   const isChatId = searchParams.get('isChatId') === 'true'
 
-  useEffect(() => {
-    console.log(chatId)
-  }, [chatId])
-
   if (!chatId) {
     return (
       <ChatLayout header={<SidebarTrigger />}>
@@ -92,12 +88,6 @@ function DmChat({ name, recipientId, chatId }: { name: string, recipientId?: num
     enabled: !!chat?.id
   })
 
-  useEffect(() => {
-    console.log(chat)
-  }, [chat])
-
-
-
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   const { sendMessage: sendWebSocketMessage } = useWebSocket(
@@ -115,8 +105,6 @@ function DmChat({ name, recipientId, chatId }: { name: string, recipientId?: num
 
               queryClient.setQueryData(['user-chats'], (old: { chats: Chat[] } | undefined) => {
                 if (!old) return { chats: [] }
-                console.log(old.chats)
-                console.log(message.data.message)
                 return {
                   chats: old.chats.map(c => {
                     if (c.id === chat?.id) {
@@ -161,13 +149,13 @@ function DmChat({ name, recipientId, chatId }: { name: string, recipientId?: num
           className="flex-1 overflow-y-auto p-4 bg-gradient-to-br from-sky-400 to-sky-500 scroll-smooth"
         >
           <div className="flex flex-col gap-2">
-            {messagesData?.messages.map((msg) => (
+            {recipient && messagesData?.messages.map((msg) => (
               <MessageView
                 key={msg.id}
                 message={msg}
                 isCurrentUser={msg.user_id === user?.id}
                 side={msg.user_id === user?.id ? 'right' : 'left'}
-                user={msg.user_id === user?.id ? user : recipient!}
+                user={msg.user_id === user?.id ? user : recipient}
               />
             ))}
           </div>
