@@ -23,16 +23,21 @@ func (r *messageRepository) GetById(id uint) (*models.Message, error) {
 	return &message, nil
 }
 
-func (r *messageRepository) CreateMessage(message *models.Message) error {
-	if res := r.db.Create(message).Error; res != nil {
-		return fmt.Errorf("failed to create message: %w", res)
+func (r *messageRepository) CreateMessage(messageDTO *models.MessageDTO) (*models.Message, error) {
+	message := models.Message{
+		Content: messageDTO.Content,
+		UserID:  messageDTO.UserID,
+		ChatID:  messageDTO.ChatID,
 	}
-	return nil
+	if res := r.db.Create(&message).Error; res != nil {
+		return nil, fmt.Errorf("failed to create message: %w", res)
+	}
+	return &message, nil
 }
 
-func (r *messageRepository) GetMessages() ([]models.Message, error) {
+func (r *messageRepository) GetMessageHistory(chatID uint, limit int, offset int) ([]models.Message, error) {
 	var messages []models.Message
-	if res := r.db.Find(&messages).Error; res != nil {
+	if res := r.db.Where("chat_id = ?", chatID).Order("created_at ASC").Limit(limit).Offset(offset).Find(&messages).Error; res != nil {
 		return nil, fmt.Errorf("failed to get messages: %w", res)
 	}
 	return messages, nil

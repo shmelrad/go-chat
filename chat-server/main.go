@@ -25,13 +25,15 @@ func main() {
 
 	messageRepository := repositories.NewMessageRepository(db)
 	userRepository := repositories.NewUserRepository(db)
+	chatRepository := repositories.NewChatRepository(db)
 
 	messageService := services.NewMessageService(messageRepository)
-	userService := services.NewUserService(userRepository)
+	userService := services.NewUserService(userRepository, messageRepository, chatRepository)
 	authService := services.NewAuthService(userRepository, config["JWT_SECRET"])
-	
+	chatService := services.NewChatService(chatRepository, userRepository)
+
 	authMiddleware := middlewares.AuthMiddleware(config["JWT_SECRET"], userRepository)
-	handlers.InitRoutes(router, authMiddleware, messageService, userService, authService)
+	handlers.InitRoutes(router, authMiddleware, messageService, userService, authService, chatService)
 
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)

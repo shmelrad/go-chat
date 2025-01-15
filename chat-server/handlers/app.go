@@ -14,23 +14,37 @@ type App struct {
 	messageService models.MessageService
 	userService    models.UserService
 	authService    models.AuthService
+	chatService    models.ChatService
 }
 
-func InitRoutes(r *gin.Engine, authMiddleware gin.HandlerFunc, messageService models.MessageService, userService models.UserService, authService models.AuthService) {
-	app := &App{messageService: messageService, userService: userService, authService: authService}
+func InitRoutes(r *gin.Engine, authMiddleware gin.HandlerFunc, messageService models.MessageService, userService models.UserService, authService models.AuthService, chatService models.ChatService) {
+	app := &App{
+		messageService: messageService,
+		userService:    userService,
+		authService:    authService,
+		chatService:    chatService,
+	}
 
 	r.Use(middlewares.CorsMiddleware())
 	// anonymous routes
-	ug := r.Group("/api/auth")
-	ug.POST("/login", app.LoginUser)
-	ug.POST("/register", app.RegisterUser)
+	ag := r.Group("/api/auth")
+	ag.POST("/login", app.LoginUser)
+	ag.POST("/register", app.RegisterUser)
 
 	// authenticated routes
 	r.Use(authMiddleware)
 	mg := r.Group("/api/messages")
-	mg.GET("/", app.GetMessages)
+	mg.GET("/", app.GetMessageHistory)
 
-	hub := ws.NewHub(messageService)
+	ug := r.Group("/api/users")
+	ug.GET("/chats", app.GetChats)
+	ug.GET("/search", app.SearchUsers)
+
+	ch := r.Group("/api/chats")
+	ch.GET("/dm-with-user/:recipient_id", app.GetDmWithUser)
+	ch.POST("/create-dm", app.CreateDmWithUser)
+
+	hub := ws.NewHub(userService, chatService)
 	go hub.Run()
 	r.GET("/ws", func(c *gin.Context) {
 		user, exists := c.Get("user")

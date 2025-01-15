@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
@@ -79,22 +80,10 @@ func (c *Client) writePump() {
 				return
 			}
 
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
+			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				return
 			}
-			w.Write(message)
 
-			// Add queued chat messages to the current websocket message.
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write([]byte{'\n'})
-				w.Write(<-c.send)
-			}
-
-			if err := w.Close(); err != nil {
-				return
-			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -113,44 +102,61 @@ func (c *Client) handleMessage(message []byte) {
 
 	switch wsMessage.Action {
 	case "send_message":
-		var sendMessageData models.SendMessageData
-		dataBytes, err := json.Marshal(wsMessage.Data)
-		if err != nil {
-			log.Println("Error marshaling data:", err)
-			return
-		}
-
-		if err := json.Unmarshal(dataBytes, &sendMessageData); err != nil {
-			log.Println("Error unmarshaling send message data:", err)
-			return
-		}
-
-		if err := c.handleSendMessage(sendMessageData); err != nil {
-			log.Println(err)
-			return
-		}
-
+		handleTypedAction(wsMessage.Data, c.handleSendMessage)
 	default:
 		log.Printf("Unknown action: %s", wsMessage.Action)
 	}
 }
 
-func (c *Client) handleSendMessage(data models.SendMessageData) error {
-	msg := &models.Message{
-		Content: data.Content,
-		Author:  c.user.Username,
-	}
-
-	if err := c.hub.messageService.CreateMessage(msg); err != nil {
-		return fmt.Errorf("error creating message: %s", err.Message)
-	}
-
-	response, err := json.Marshal(msg)
+func handleTypedAction[T any](wsData interface{}, handler func(T) error) {
+	var data T
+	dataBytes, err := json.Marshal(wsData)
 	if err != nil {
-		return fmt.Errorf("error marshaling response: %w", err)
+		log.Println("Error marshaling data:", err)
+		return
+	}
+	if err := json.Unmarshal(dataBytes, &data); err != nil {
+		log.Println("Error unmarshaling action data:", err)
+		return
+	}
+	if err := handler(data); err != nil {
+		log.Println(err)
+	}
+}
+
+func (c *Client) handleSendMessage(data models.SendMessageData) error {
+	msg := &models.MessageDTO{
+		Content: data.Content,
+		UserID:  c.user.ID,
+		ChatID:  data.ChatID,
 	}
 
-	c.hub.broadcast <- response
+	createdMessage, appErr := c.hub.userService.SendMessage(msg)
+	if appErr != nil {
+		errorMsg := models.WebSocketMessage{
+			Action: "send_message_error",
+			Data: gin.H{
+				"error": appErr.Message,
+			},
+		}
+		c.send <- errorMsg.Encode()
+		return fmt.Errorf("error creating message: %s", appErr.Message)
+	}
+
+	broadcastMsg := models.WebSocketMessage{
+		Action: "new_message",
+		Data: gin.H{
+			"message":   createdMessage,
+		},
+	}
+	err := c.hub.broadcastToChat(data.ChatID, broadcastMsg)
+	if err != nil {
+		errorMsg := models.WebSocketMessage{
+			Action: "broadcast_error",
+			Data:   gin.H{"error": err.Error()},
+		}
+		c.send <- errorMsg.Encode()
+	}
 	return nil
 }
 
@@ -168,7 +174,8 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request, user *models.User
 		send: make(chan []byte, 256),
 		user: user,
 	}
-	client.hub.register <- client
+
+	hub.register <- client
 
 	go client.writePump()
 	go client.readPump()

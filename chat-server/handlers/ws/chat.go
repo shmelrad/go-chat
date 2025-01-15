@@ -8,17 +8,17 @@ import (
 )
 
 type Hub struct {
-	clients  map[*Client]bool
-	upgrader websocket.Upgrader
-	register       chan *Client
-	unregister     chan *Client
-	broadcast      chan []byte
-	messageService models.MessageService
+	clients     map[uint]*Client
+	upgrader    websocket.Upgrader
+	register    chan *Client
+	unregister  chan *Client
+	userService models.UserService
+	chatService models.ChatService
 }
 
-func NewHub(messageService models.MessageService) *Hub {
+func NewHub(userService models.UserService, chatService models.ChatService) *Hub {
 	return &Hub{
-		clients: make(map[*Client]bool),
+		clients: make(map[uint]*Client),
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				return true // for demo purposes (vite takes port 5173)
@@ -26,42 +26,48 @@ func NewHub(messageService models.MessageService) *Hub {
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 		},
-		register:       make(chan *Client),
-		unregister:     make(chan *Client),
-		broadcast:      make(chan []byte),
-		messageService: messageService,
+		register:    make(chan *Client),
+		unregister:  make(chan *Client),
+		userService: userService,
+		chatService: chatService,
 	}
 }
 
 func (hub *Hub) Run() {
 	for {
 		select {
-
 		case client := <-hub.register:
 			hub.registerClient(client)
-
 		case client := <-hub.unregister:
-			hub.unregisterClient(client)
-
-		case message := <-hub.broadcast:
-			hub.broadcastMessage(message)
+			hub.unregisterClient(client.user.ID)
 		}
 	}
 }
 
 func (h *Hub) registerClient(client *Client) {
-	h.clients[client] = true
+	h.clients[client.user.ID] = client
 }
 
-func (h *Hub) unregisterClient(client *Client) {
-	if _, ok := h.clients[client]; ok {
-		delete(h.clients, client)
+func (h *Hub) unregisterClient(id uint) {
+	if client, ok := h.clients[id]; ok {
+		delete(h.clients, id)
 		close(client.send)
 	}
 }
 
-func (h *Hub) broadcastMessage(message []byte) {
-	for client := range h.clients {
-		client.send <- message
+func (h *Hub) broadcastToChat(chatID uint, message models.WebSocketMessage) error {
+	chat, err := h.chatService.GetChatById(chatID)
+	if err != nil {
+		return err
 	}
+
+	for _, user := range chat.Members {
+		client, ok := h.clients[user.ID]
+		if !ok {
+			continue
+		}
+		client.send <- message.Encode()
+	}
+
+	return nil
 }
