@@ -1,7 +1,7 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Message } from "@/types/message";
 import { User } from "@/types/user";
-
+import Markdown from "react-markdown";
 interface MessageViewProps {
   message: Message;
   side: 'left' | 'right';
@@ -33,7 +33,7 @@ export default function MessageView({ message, side, isCurrentUser, user }: Mess
 
         {!isCurrentUser && <p className="text-sm font-bold">{user.username}</p>}
         <div className="flex items-end gap-2">
-          <p className="[overflow-wrap:anywhere]">{message.content}</p>
+          <p className="prose [overflow-wrap:anywhere]"><Markdown>{message.content}</Markdown></p>
           <p className={`relative top-1 text-xs text-gray-500`}>
             {time}
           </p>
