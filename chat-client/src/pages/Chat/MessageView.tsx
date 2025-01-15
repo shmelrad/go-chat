@@ -30,10 +30,11 @@ export default function MessageView({ message, side, isCurrentUser, user }: Mess
       {!isRight && <MessageAvatar user={user} />}
 
       <div className={`p-2 rounded-lg max-w-[40%] ${messageClassName} ${messageBorderClassName}`}>
-
         {!isCurrentUser && <p className="text-sm font-bold">{user.username}</p>}
         <div className="flex items-end gap-2">
-          <p className="prose [overflow-wrap:anywhere]"><Markdown>{message.content}</Markdown></p>
+          <p className="prose whitespace-pre-wrap [overflow-wrap:anywhere]">
+            <Markdown>{message.content}</Markdown>
+          </p>
           <p className={`relative top-1 text-xs text-gray-500`}>
             {time}
           </p>

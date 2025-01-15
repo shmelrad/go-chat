@@ -16,13 +16,34 @@ interface TextEditorProps {
 
 export default function TextEditor({ sendWebSocketMessage, chat, isSending }: TextEditorProps) {
     const [message, setMessage] = useState("");
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const focusInput = () => {
         setTimeout(() => {
             inputRef.current?.focus();
         }, 0);
     }
+
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
+
+    const adjustTextareaHeight = () => {
+        const textarea = inputRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto';
+            const newHeight = Math.min(textarea.scrollHeight, 250); // 10 lines ≈ 250px
+            textarea.style.height = `${newHeight}px`;
+        }
+    };
+
+    const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setMessage(e.target.value);
+        adjustTextareaHeight();
+    };
 
     const sendMessage = async () => {
         if (message.trim() === '' || isSending) return;
@@ -39,6 +60,9 @@ export default function TextEditor({ sendWebSocketMessage, chat, isSending }: Te
 
         sendWebSocketMessage(JSON.stringify(wsMessage));
         setMessage('');
+        if (inputRef.current) {
+            inputRef.current.style.height = '40px';
+        }
         focusInput();
     };
 
@@ -48,19 +72,19 @@ export default function TextEditor({ sendWebSocketMessage, chat, isSending }: Te
 
     return (
         <div className="border-t">
-            <div className="flex items-center gap-2 px-4">
+            <div className="flex items-end gap-2 px-4">
                 <button className="p-2 text-muted-foreground hover:text-primary cursor-pointer">
                     <LuPaperclip className='size-6' />
                 </button>
-                <input
+                <textarea
                     ref={inputRef}
-                    type="text"
-                    className="flex-1 py-2.5 rounded-none border-none outline-none"
+                    className="flex-1 py-2.5 rounded-none border-none outline-none resize-none min-h-[40px] max-h-[250px] overflow-y-auto"
                     placeholder="Enter a message..."
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                    onChange={handleInput}
+                    onKeyDown={handleKeyPress}
                     disabled={isSending}
+                    rows={1}
                 />
                 <button 
                     className="p-2 text-muted-foreground hover:text-primary cursor-pointer" 
