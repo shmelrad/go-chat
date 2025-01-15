@@ -1,4 +1,4 @@
-import { useAuthStore } from "@/stores/userStore"
+import { useAuthStore } from "@/stores/authStore"
 import { Navigate, useLocation } from "react-router-dom"
 
 interface AuthRouteProps {

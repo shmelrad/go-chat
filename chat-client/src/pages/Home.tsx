@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useAuthStore } from "@/stores/userStore";
+import { useAuthStore } from "@/stores/authStore";
 import { Link, Navigate } from "react-router-dom";
 
 export default function Home() {

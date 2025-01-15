@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom"
-import { useAuthStore } from "@/stores/userStore"
+import { useAuthStore } from "@/stores/authStore"
 import { authApi } from "@/lib/api/auth"
 import { toast } from "sonner"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
