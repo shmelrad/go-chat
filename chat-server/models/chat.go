@@ -13,7 +13,7 @@ type Chat struct {
 	Type          ChatType  `json:"type" gorm:"type:varchar(10);not null"`
 	Name          string    `json:"name,omitempty" gorm:"type:varchar(100)"`
 	LastMessageID *uint     `json:"last_message_id"`
-	LastMessage   *Message  `json:"last_message"`
+	LastMessage   *Message  `json:"last_message" gorm:"foreignKey:LastMessageID"`
 	Members       []User    `json:"members" gorm:"many2many:chat_members;"`
 	Messages      []Message `json:"messages" gorm:"constraint:OnDelete:CASCADE;"`
 }
@@ -36,7 +36,7 @@ type ChatSearchResult struct {
 type ChatRepository interface {
 	CreateDmByUsers(senderID uint, receiverID uint) (*Chat, error)
 	GetById(id uint) (*Chat, error)
-	UpdateChat(chat *Chat) error
+	UpdateLastMessage(id uint, messageID uint) error
 	GetDmByIds(userID uint, recipientID uint) (*Chat, error)
 }
 

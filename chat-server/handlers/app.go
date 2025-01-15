@@ -37,10 +37,11 @@ func InitRoutes(r *gin.Engine, authMiddleware gin.HandlerFunc, messageService mo
 	mg.GET("/", app.GetMessageHistory)
 
 	ug := r.Group("/api/users")
-	ug.GET("/chats", app.GetChats)
+	ug.GET("/chats", app.GetChats)	
 	ug.GET("/search", app.SearchUsers)
 
 	ch := r.Group("/api/chats")
+	ch.GET("/:chat_id", app.GetChatById)
 	ch.GET("/dm-with-user/:recipient_id", app.GetDmWithUser)
 	ch.POST("/create-dm", app.CreateDmWithUser)
 

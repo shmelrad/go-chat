@@ -78,8 +78,8 @@ export function AppSidebar() {
         }
     }
 
-    const openChat = (id: number, type: 'dm' | 'group', name: string) => {
-        navigate(`/chat/${id}?type=${type}&name=${name}`)
+    const openChat = (id: number, type: 'dm' | 'group', name: string, isChatId: boolean) => {
+        navigate(`/chat/${id}?type=${type}&name=${name}&isChatId=${isChatId}`)
         setQuery("")
     }
 
@@ -114,7 +114,7 @@ export function AppSidebar() {
                             <div
                                 key={chat.id}
                                 className="flex items-center gap-2 p-2 hover:bg-accent rounded-lg cursor-pointer"
-                                onClick={() => openChat(chat.id, chat.type, chat.name)}
+                                onClick={() => openChat(chat.id, chat.type, chat.name, false)}
                             >
                                 <Avatar>
                                     <AvatarFallback>{chat.name[0]}</AvatarFallback>
@@ -140,7 +140,7 @@ export function AppSidebar() {
                                         <SidebarMenuItem key={chat.id}>
                                             <SidebarMenuButton asChild>
                                                 <button
-                                                    onClick={() => openChat(chat.id, chat.type, recipient?.username ?? chat.name)}
+                                                    onClick={() => openChat(chat.id, chat.type, recipient?.username ?? chat.name, true)}
                                                     className="flex items-center gap-3 p-2 w-full"
                                                 >
                                                     <Avatar>
@@ -151,7 +151,7 @@ export function AppSidebar() {
                                                             <div className="flex-1">
                                                                 <div className="flex justify-between items-center">
                                                                     <span className="font-medium truncate">
-                                                                        {recipient?.username}
+                                                                        {recipient?.username} {chat.id}
                                                                     </span>
                                                                     <span className="text-xs text-muted-foreground ml-2">
                                                                         {formatTime(chat.last_message?.created_at ?? chat.updated_at)}

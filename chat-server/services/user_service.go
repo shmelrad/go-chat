@@ -1,6 +1,8 @@
 package services
 
-import "chat-server/models"
+import (
+	"chat-server/models"
+)
 
 type userService struct {
 	userRepository models.UserRepository
@@ -26,8 +28,7 @@ func (s *userService) SendMessage(message *models.MessageDTO) (*models.Message, 
 	if err != nil {
 		return nil, models.ErrServerError
 	}
-	chat.LastMessageID = &createdMessage.ID
-	err = s.chatRepository.UpdateChat(chat)
+	err = s.chatRepository.UpdateLastMessage(chat.ID, createdMessage.ID)
 	if err != nil {
 		return nil, models.ErrServerError
 	}

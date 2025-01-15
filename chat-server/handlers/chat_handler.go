@@ -44,3 +44,19 @@ func (a *App) CreateDmWithUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"chat": chat})
 }
+
+func (a *App) GetChatById(c *gin.Context) {
+	chatID := c.Param("chat_id")
+	chatIDUint, err := strconv.ParseUint(chatID, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid chat id"})
+		return
+	}
+	chat, appErr := a.chatService.GetChatById(uint(chatIDUint))
+	if appErr != nil {
+		c.JSON(appErr.Code, gin.H{"error": appErr.Message})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"chat": chat})
+}
+

@@ -16,11 +16,15 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Chat } from '@/types/chat'
 
 export default function ChatPage() {
-  // chat id equals user id if dm
   const { chatId } = useParams()
   const [searchParams] = useSearchParams()
   const type = searchParams.get('type')
   const name = searchParams.get('name')
+  const isChatId = searchParams.get('isChatId') === 'true'
+
+  useEffect(() => {
+    console.log(chatId)
+  }, [chatId])
 
   if (!chatId) {
     return (
@@ -40,25 +44,33 @@ export default function ChatPage() {
   }
 
   if (type === 'dm') {
+    if (isChatId) {
+      return <DmChat name={name} chatId={parseInt(chatId)} />
+    }
     return <DmChat name={name} recipientId={parseInt(chatId)} />
   }
 
   return <GroupChat />
 }
 
-function DmChat({ name, recipientId }: { name: string, recipientId: number }) {
+function DmChat({ name, recipientId, chatId }: { name: string, recipientId?: number, chatId?: number }) {
   const { token, user } = useAuthStore((state) => state)
   const [recipient, setRecipient] = useState<User | null>(null)
   const queryClient = useQueryClient()
   const [isSending, setIsSending] = useState(false)
 
   const { data: chat } = useQuery({
-    queryKey: ['chat', recipientId],
+    queryKey: ['chat', recipientId, chatId],
     queryFn: async () => {
       try {
-        return (await chatsApi.getDmWithUser(recipientId)).chat
+        if (chatId) {
+          return (await chatsApi.getChat(chatId)).chat
+        } else if (recipientId) {
+          return (await chatsApi.getDmWithUser(recipientId)).chat
+        }
+        throw new Error('No chat ID or recipient ID provided')
       } catch (error: unknown) {
-        if ((error as ApiErrorResponse).code === 404) {
+        if ((error as ApiErrorResponse).code === 404 && recipientId) {
           const newChat = (await chatsApi.createDmWithUser(recipientId)).chat
           queryClient.invalidateQueries({ queryKey: ['user-chats'] })
           return newChat
@@ -77,8 +89,14 @@ function DmChat({ name, recipientId }: { name: string, recipientId: number }) {
   const { data: messagesData } = useQuery({
     queryKey: ['messages', chat?.id],
     queryFn: () => messagesApi.getMessages(chat?.id),
-    enabled: !!chat?.id,
+    enabled: !!chat?.id
   })
+
+  useEffect(() => {
+    console.log(chat)
+  }, [chat])
+
+
 
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
@@ -94,9 +112,11 @@ function DmChat({ name, recipientId }: { name: string, recipientId: number }) {
               queryClient.setQueryData(['messages', chat?.id], (old: MessagesResponse | undefined) => ({
                 messages: [...(old?.messages || []), message.data.message]
               }))
-              
+
               queryClient.setQueryData(['user-chats'], (old: { chats: Chat[] } | undefined) => {
                 if (!old) return { chats: [] }
+                console.log(old.chats)
+                console.log(message.data.message)
                 return {
                   chats: old.chats.map(c => {
                     if (c.id === chat?.id) {

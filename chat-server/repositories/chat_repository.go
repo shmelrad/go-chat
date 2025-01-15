@@ -50,8 +50,8 @@ func (r *chatRepository) GetById(id uint) (*models.Chat, error) {
 	return &chat, nil
 }
 
-func (r *chatRepository) UpdateChat(chat *models.Chat) error {
-	return r.db.Save(chat).Error
+func (r *chatRepository) UpdateLastMessage(id uint, messageID uint) error {
+	return r.db.Debug().Model(&models.Chat{}).Where("id = ?", id).Update("last_message_id", messageID).Error
 }
 
 func (r *chatRepository) GetDmByIds(userID uint, recipientID uint) (*models.Chat, error) {
