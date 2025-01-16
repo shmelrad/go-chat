@@ -18,6 +18,9 @@ import { useMutation, useQuery } from "@tanstack/react-query"
 import { usersApi } from "@/lib/api/users"
 import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/stores/authStore"
+import { DropdownMenu, DropdownMenuItem, DropdownMenuContent, DropdownMenuTrigger } from "./ui/dropdown-menu"
+import { Button } from "./ui/button"
+import { DarkModeSwitch } from "./ui/dark-mode-switch"
 
 export function AppSidebar() {
     const { state, setOpen } = useSidebar()
@@ -85,11 +88,30 @@ export function AppSidebar() {
 
     return (
         <Sidebar collapsible="icon">
-            <SidebarHeader className="flex items-center">
+            <SidebarHeader className="flex pb-0">
                 <div className={cn("flex w-full", isCollapsed ? "justify-center" : "flex-col gap-2")}>
                     {!isCollapsed ? (
                         <>
-                            <p className="text-sm text-muted-foreground">Logged in as <span className="font-bold">{user?.username}</span></p>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="font-bold h-fit py-1">
+                                        <Avatar>
+                                            <AvatarFallback>{user?.username[0]}</AvatarFallback>
+                                        </Avatar>
+                                        <p className="text-sm text-muted-foreground">{user?.username}</p>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem>Profile</DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onSelect={(event) => {
+                                            event.preventDefault()
+                                        }}>
+                                        <DarkModeSwitch />
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
                             <Input
                                 ref={searchInputRef}
                                 placeholder="Search users..."
@@ -141,25 +163,27 @@ export function AppSidebar() {
                                             <SidebarMenuButton asChild>
                                                 <button
                                                     onClick={() => openChat(chat.id, chat.type, recipient?.username ?? chat.name, true)}
-                                                    className="flex items-center gap-3 p-2 w-full"
+                                                    className="flex items-center gap-3 px-2 py-1 h-fit w-full"
                                                 >
                                                     <Avatar>
                                                         <AvatarFallback>{recipient?.username[0]}</AvatarFallback>
                                                     </Avatar>
                                                     {!isCollapsed && (
                                                         <div className="flex flex-1 min-w-0">
-                                                            <div className="flex-1">
+                                                            <div className="w-full overflow-hidden">
                                                                 <div className="flex justify-between items-center">
                                                                     <span className="font-medium truncate">
                                                                         {recipient?.username} {chat.id}
                                                                     </span>
-                                                                    <span className="text-xs text-muted-foreground ml-2">
+                                                                    <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
                                                                         {formatTime(chat.last_message?.created_at ?? chat.updated_at)}
                                                                     </span>
                                                                 </div>
-                                                                <span className="text-sm text-muted-foreground truncate block">
-                                                                    {chat.last_message?.content ?? "No messages yet"}
-                                                                </span>
+                                                                <div className="w-full overflow-hidden">
+                                                                    <span className="text-sm text-muted-foreground truncate inline-block w-full">
+                                                                        {chat.last_message?.content ?? "No messages yet"}
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )}

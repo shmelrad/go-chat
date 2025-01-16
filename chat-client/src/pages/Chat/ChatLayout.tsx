@@ -8,7 +8,7 @@ export default function ChatLayout({ children, header }: { children: ReactNode, 
     <div className="h-screen flex">
       <SidebarProvider>
         <AppSidebar />
-        <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        <main className="flex-1 flex flex-col h-screen overflow-hidden bg-sidebar">
           {header}
           <div className="flex-1 overflow-hidden">
             {children}

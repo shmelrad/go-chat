@@ -21,7 +21,7 @@ export default function TextEditor({ sendWebSocketMessage, chat, isSending }: Te
     const focusInput = () => {
         setTimeout(() => {
             inputRef.current?.focus();
-        }, 0);
+        }, 10);
     }
 
     const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -61,7 +61,7 @@ export default function TextEditor({ sendWebSocketMessage, chat, isSending }: Te
         sendWebSocketMessage(JSON.stringify(wsMessage));
         setMessage('');
         if (inputRef.current) {
-            inputRef.current.style.height = '40px';
+            inputRef.current.style.height = '44px';
         }
         focusInput();
     };
@@ -78,7 +78,7 @@ export default function TextEditor({ sendWebSocketMessage, chat, isSending }: Te
                 </button>
                 <textarea
                     ref={inputRef}
-                    className="flex-1 py-2.5 rounded-none border-none outline-none resize-none min-h-[40px] max-h-[250px] overflow-y-auto"
+                    className="flex-1 py-2.5 rounded-none border-none outline-none resize-none min-h-[44px] max-h-[250px] overflow-y-auto bg-transparent"
                     placeholder="Enter a message..."
                     value={message}
                     onChange={handleInput}
