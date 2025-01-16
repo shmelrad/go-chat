@@ -173,7 +173,7 @@ export function AppSidebar() {
                                                             <div className="w-full overflow-hidden">
                                                                 <div className="flex justify-between items-center">
                                                                     <span className="font-medium truncate">
-                                                                        {recipient?.username} {chat.id}
+                                                                        {recipient?.username}
                                                                     </span>
                                                                     <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
                                                                         {formatTime(chat.last_message?.created_at ?? chat.updated_at)}
