@@ -21,6 +21,7 @@ import { useAuthStore } from "@/stores/authStore"
 import { DropdownMenu, DropdownMenuItem, DropdownMenuContent, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Button } from "./ui/button"
 import { DarkModeSwitch } from "./ui/dark-mode-switch"
+import { ProfileModal } from "@/pages/ProfileModal"
 
 export function AppSidebar() {
     const { state, setOpen } = useSidebar()
@@ -29,6 +30,7 @@ export function AppSidebar() {
     const [query, setQuery] = useState("")
     const navigate = useNavigate()
     const { user } = useAuthStore((state) => state)
+    const [isProfileOpen, setIsProfileOpen] = useState(false)
 
     const { data: chats, isError, error } = useQuery({
         queryKey: ['user-chats'],
@@ -102,7 +104,9 @@ export function AppSidebar() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem>Profile</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => setIsProfileOpen(true)}>
+                                        Profile
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onSelect={(event) => {
                                             event.preventDefault()
@@ -111,7 +115,10 @@ export function AppSidebar() {
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-
+                            <ProfileModal 
+                                open={isProfileOpen} 
+                                onOpenChange={setIsProfileOpen}
+                            />
                             <Input
                                 ref={searchInputRef}
                                 placeholder="Search users..."
