@@ -60,3 +60,23 @@ func (a *App) GetChatById(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"chat": chat})
 }
 
+func (a *App) CreateGroupChat(c *gin.Context) {
+	user := c.MustGet("user").(*models.User)
+
+	var body struct {
+		Name string `json:"name" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		return
+	}
+
+	chat, appErr := a.chatService.CreateGroupChat(user.ID, body.Name)
+	if appErr != nil {
+		c.JSON(appErr.Code, gin.H{"error": appErr.Message})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"chat": chat})
+}

@@ -66,3 +66,23 @@ func (r *chatRepository) GetDmByIds(userID uint, recipientID uint) (*models.Chat
 	}
 	return &chat, nil
 }
+
+func (r *chatRepository) CreateGroupChat(creatorID uint, name string) (*models.Chat, error) {
+	chat := models.Chat{
+		Type: models.ChatTypeGroup,
+		Name: name,
+		Members: []models.User{
+			{BaseModel: models.BaseModel{ID: creatorID}},
+		},
+	}
+
+	if err := r.db.Create(&chat).Error; err != nil {
+		return nil, err
+	}
+
+	createdChat, err := r.GetById(chat.ID)
+	if err != nil {
+		return nil, err
+	}
+	return createdChat, nil
+}

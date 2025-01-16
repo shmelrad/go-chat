@@ -45,3 +45,10 @@ func (s *chatService) GetChatById(id uint) (*models.Chat, *models.AppError) {
 	return chat, nil
 }
 
+func (s *chatService) CreateGroupChat(creatorID uint, name string) (*models.Chat, *models.AppError) {
+	chat, err := s.chatRepository.CreateGroupChat(creatorID, name)
+	if err != nil {
+		return nil, models.ErrServerError
+	}
+	return chat, nil
+}

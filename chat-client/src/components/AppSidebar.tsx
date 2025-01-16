@@ -22,6 +22,7 @@ import { DropdownMenu, DropdownMenuItem, DropdownMenuContent, DropdownMenuTrigge
 import { Button } from "./ui/button"
 import { DarkModeSwitch } from "./ui/dark-mode-switch"
 import { ProfileModal } from "@/pages/ProfileModal"
+import { CreateChatModal } from "@/pages/CreateChatModal"
 
 export function AppSidebar() {
     const { state, setOpen } = useSidebar()
@@ -31,6 +32,7 @@ export function AppSidebar() {
     const navigate = useNavigate()
     const { user } = useAuthStore((state) => state)
     const [isProfileOpen, setIsProfileOpen] = useState(false)
+    const [isCreateChatOpen, setIsCreateChatOpen] = useState(false)
 
     const { data: chats, isError, error } = useQuery({
         queryKey: ['user-chats'],
@@ -164,6 +166,7 @@ export function AppSidebar() {
                                 variant="ghost"
                                 size="icon"
                                 title="Create a new chat"
+                                onClick={() => setIsCreateChatOpen(true)}
                             >
                                 <Plus className="h-4 w-4" />
                             </Button>
@@ -185,14 +188,14 @@ export function AppSidebar() {
                                                 >
                                                     <Avatar>
                                                         <AvatarImage src={recipient?.avatar_url} />
-                                                        <AvatarFallback>{recipient?.username[0]}</AvatarFallback>
+                                                        <AvatarFallback>{recipient?.username[0] ?? chat.name[0]}</AvatarFallback>
                                                     </Avatar>
                                                     {!isCollapsed && (
                                                         <div className="flex flex-1 min-w-0">
                                                             <div className="w-full overflow-hidden">
                                                                 <div className="flex justify-between items-center">
                                                                     <span className="font-medium truncate">
-                                                                        {recipient?.username}
+                                                                        {recipient?.username ?? chat.name}
                                                                     </span>
                                                                     <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
                                                                         {formatTime(chat.last_message?.created_at ?? chat.updated_at)}
@@ -216,6 +219,10 @@ export function AppSidebar() {
                     </SidebarGroup>
                 )}
             </SidebarContent>
+            <CreateChatModal 
+                open={isCreateChatOpen}
+                onOpenChange={setIsCreateChatOpen}
+            />
         </Sidebar>
     )
 }

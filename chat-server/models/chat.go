@@ -39,10 +39,12 @@ type ChatRepository interface {
 	GetById(id uint) (*Chat, error)
 	UpdateLastMessage(id uint, messageID uint) error
 	GetDmByIds(userID uint, recipientID uint) (*Chat, error)
+	CreateGroupChat(creatorID uint, name string) (*Chat, error)
 }
 
 type ChatService interface {
 	GetDmByIds(userID uint, recipientID uint) (*Chat, *AppError)
 	CreateDmByUsers(senderID uint, receiverID uint) (*Chat, *AppError)
 	GetChatById(id uint) (*Chat, *AppError)
+	CreateGroupChat(creatorID uint, name string) (*Chat, *AppError)
 }

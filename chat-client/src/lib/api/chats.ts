@@ -5,6 +5,10 @@ interface GetChatResponse {
     chat: Chat
 }
 
+interface CreateGroupChatRequest {
+    name: string
+}
+
 class ChatsApi extends BaseApi {
     constructor() {
         super('/api/chats')
@@ -26,6 +30,10 @@ class ChatsApi extends BaseApi {
         return this.post<GetChatResponse>(`/create-dm`, {
             recipientId,
         }, { auth: true })
+    }
+
+    createGroupChat(data: CreateGroupChatRequest) {
+        return this.post<GetChatResponse>('/create-group-chat', data, { auth: true })
     }
 }
 
