@@ -28,8 +28,8 @@ func main() {
 	chatRepository := repositories.NewChatRepository(db)
 
 	messageService := services.NewMessageService(messageRepository)
-	userService := services.NewUserService(userRepository, messageRepository, chatRepository)
 	authService := services.NewAuthService(userRepository, config["JWT_SECRET"])
+	userService := services.NewUserService(userRepository, messageRepository, chatRepository, authService)
 	chatService := services.NewChatService(chatRepository, userRepository)
 
 	authMiddleware := middlewares.AuthMiddleware(config["JWT_SECRET"], userRepository)

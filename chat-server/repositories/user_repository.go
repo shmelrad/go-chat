@@ -76,6 +76,7 @@ func (r *userRepository) SearchUsers(query string, limit int, offset int) ([]mod
 			Type: models.ChatTypeDM,
 			ID:   user.ID,
 			Name: user.Username,
+			AvatarURL: user.AvatarURL,
 		})
 	}
 	return results, nil
@@ -87,4 +88,12 @@ func (r *userRepository) GetChats(userID uint) ([]models.Chat, error) {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 	return user.Chats, nil
+}
+
+func (r *userRepository) UpdateAvatar(userID uint, avatarURL string) error {
+	result := r.db.Model(&models.User{}).Where("id = ?", userID).Update("avatar_url", avatarURL)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update avatar: %w", result.Error)
+	}
+	return nil
 }

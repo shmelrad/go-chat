@@ -49,7 +49,7 @@ export default function MessageView({ message, side, isCurrentUser, user }: Mess
 const MessageAvatar = ({ user }: { user: User }) => {
   return (
     <Avatar>
-      <AvatarImage src="https://placehold.jp/150x150.png" />
+      <AvatarImage src={user.avatar_url} />
       <AvatarFallback>
         {user.username.charAt(0)}
       </AvatarFallback>

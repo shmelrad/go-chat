@@ -9,13 +9,18 @@ interface GetChatsResponse {
   chats: Chat[]
 }
 
+interface UploadAvatarResponse {
+  token: string
+  avatar_url: string
+}
+
 class UsersApi extends BaseApi {
   constructor() {
     super('/api/users')
   }
 
   searchUsers({ q, offset }: { q: string, offset: number }) {
-    return this.get<SearchUsersResponse>('/search', { 
+    return this.get<SearchUsersResponse>('/search', {
       auth: true,
       params: {
         q,
@@ -26,6 +31,12 @@ class UsersApi extends BaseApi {
 
   getChats() {
     return this.get<GetChatsResponse>('/chats', { auth: true })
+  }
+
+  uploadAvatar(formData: FormData) {
+    return this.postFile<UploadAvatarResponse>('/avatar', formData, {
+      auth: true,
+    })
   }
 }
 

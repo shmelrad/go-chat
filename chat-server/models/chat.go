@@ -28,9 +28,10 @@ type GroupSettings struct {
 }
 
 type ChatSearchResult struct {
-	Type ChatType `json:"type"`
-	ID   uint     `json:"id"`
-	Name string   `json:"name"`
+	Type      ChatType `json:"type"`
+	ID        uint     `json:"id"`
+	Name      string   `json:"name"`
+	AvatarURL string   `json:"avatar_url"`
 }
 
 type ChatRepository interface {

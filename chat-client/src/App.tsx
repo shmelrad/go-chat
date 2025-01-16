@@ -8,33 +8,36 @@ import { Toaster } from "@/components/ui/sonner"
 import AuthRoute from "@/components/AuthRoute"
 import { TooltipProvider } from "@radix-ui/react-tooltip"
 import { ThemeProvider } from "./components/ThemeProvider"
+import { ImageModalProvider } from "./components/ImageModalProvider"
 
 function App() {
   const queryClient = new QueryClient()
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider delayDuration={0}>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route
-                path="/chat"
-                element={
-                  <AuthRoute>
-                    <ChatPage />
-                  </AuthRoute>
-                }
-              />
-              <Route path="/chat/:chatId" element={<AuthRoute><ChatPage /></AuthRoute>} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-            </Routes>
-            <Toaster />
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
+      <ImageModalProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider delayDuration={0}>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route
+                  path="/chat"
+                  element={
+                    <AuthRoute>
+                      <ChatPage />
+                    </AuthRoute>
+                  }
+                />
+                <Route path="/chat/:chatId" element={<AuthRoute><ChatPage /></AuthRoute>} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+              </Routes>
+              <Toaster />
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ImageModalProvider>
     </ThemeProvider>
   )
 }

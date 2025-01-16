@@ -12,7 +12,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar'
 import { chatsApi } from '@/lib/api/chats'
 import { ApiErrorResponse } from '@/lib/api/base'
 import { User } from '@/types/user'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Chat } from '@/types/chat'
 
 export default function ChatPage() {
@@ -20,6 +20,7 @@ export default function ChatPage() {
   const [searchParams] = useSearchParams()
   const type = searchParams.get('type')
   const name = searchParams.get('name')
+  const avatarUrl = searchParams.get('avatarUrl')
   const isChatId = searchParams.get('isChatId') === 'true'
 
   if (!chatId) {
@@ -41,15 +42,15 @@ export default function ChatPage() {
 
   if (type === 'dm') {
     if (isChatId) {
-      return <DmChat name={name} chatId={parseInt(chatId)} />
+      return <DmChat name={name} chatId={parseInt(chatId)} avatarUrl={avatarUrl ?? ""} />
     }
-    return <DmChat name={name} recipientId={parseInt(chatId)} />
+    return <DmChat name={name} recipientId={parseInt(chatId)} avatarUrl={avatarUrl ?? ""} />
   }
 
   return <GroupChat />
 }
 
-function DmChat({ name, recipientId, chatId }: { name: string, recipientId?: number, chatId?: number }) {
+function DmChat({ name, recipientId, chatId, avatarUrl }: { name: string, recipientId?: number, chatId?: number, avatarUrl: string }) {
   const { token, user } = useAuthStore((state) => state)
   const [recipient, setRecipient] = useState<User | null>(null)
   const queryClient = useQueryClient()
@@ -142,7 +143,7 @@ function DmChat({ name, recipientId, chatId }: { name: string, recipientId?: num
   }, [messagesData?.messages])
 
   return (
-    <ChatLayout header={<ChatHeader name={name} />}>
+    <ChatLayout header={<ChatHeader name={name} avatarUrl={avatarUrl ?? ""} />}>
       <div className="flex flex-col h-full">
         <div
           ref={messagesContainerRef}
@@ -177,12 +178,13 @@ function GroupChat() {
   return <div>Not yet implemented</div>
 }
 
-const ChatHeader = ({ name }: { name: string }) => {
+const ChatHeader = ({ name, avatarUrl }: { name: string, avatarUrl: string }) => {
   return (
     <div className="flex items-center py-1">
       <SidebarTrigger />
       <div className="flex-1 flex justify-center">
         <Avatar>
+          <AvatarImage src={avatarUrl} />
           <AvatarFallback>{name[0]}</AvatarFallback>
         </Avatar>
         <div className="flex flex-col ml-2">

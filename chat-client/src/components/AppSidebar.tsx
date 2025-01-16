@@ -13,7 +13,7 @@ import {
 import { Input } from "./ui/input"
 import { cn } from "@/lib/utils"
 import { useRef, useState } from "react"
-import { Avatar, AvatarFallback } from "./ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { usersApi } from "@/lib/api/users"
 import { useNavigate } from "react-router-dom"
@@ -83,8 +83,8 @@ export function AppSidebar() {
         }
     }
 
-    const openChat = (id: number, type: 'dm' | 'group', name: string, isChatId: boolean) => {
-        navigate(`/chat/${id}?type=${type}&name=${name}&isChatId=${isChatId}`)
+    const openChat = (id: number, type: 'dm' | 'group', name: string, isChatId: boolean, avatarUrl: string) => {
+        navigate(`/chat/${id}?type=${type}&name=${name}&isChatId=${isChatId}&avatarUrl=${avatarUrl}`)
         setQuery("")
     }
 
@@ -98,6 +98,7 @@ export function AppSidebar() {
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" className="font-bold h-fit py-1">
                                         <Avatar>
+                                            <AvatarImage src={user?.avatar_url} />
                                             <AvatarFallback>{user?.username[0]}</AvatarFallback>
                                         </Avatar>
                                         <p className="text-sm text-muted-foreground">{user?.username}</p>
@@ -143,7 +144,7 @@ export function AppSidebar() {
                             <div
                                 key={chat.id}
                                 className="flex items-center gap-2 p-2 hover:bg-accent rounded-lg cursor-pointer"
-                                onClick={() => openChat(chat.id, chat.type, chat.name, false)}
+                                onClick={() => openChat(chat.id, chat.type, chat.name, false, chat.avatar_url)}
                             >
                                 <Avatar>
                                     <AvatarFallback>{chat.name[0]}</AvatarFallback>
@@ -169,10 +170,11 @@ export function AppSidebar() {
                                         <SidebarMenuItem key={chat.id}>
                                             <SidebarMenuButton asChild>
                                                 <button
-                                                    onClick={() => openChat(chat.id, chat.type, recipient?.username ?? chat.name, true)}
+                                                    onClick={() => openChat(chat.id, chat.type, recipient?.username ?? chat.name, true, recipient?.avatar_url ?? "")}
                                                     className="flex items-center gap-3 px-2 py-1 h-fit w-full"
                                                 >
                                                     <Avatar>
+                                                        <AvatarImage src={recipient?.avatar_url} />
                                                         <AvatarFallback>{recipient?.username[0]}</AvatarFallback>
                                                     </Avatar>
                                                     {!isCollapsed && (

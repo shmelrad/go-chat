@@ -14,5 +14,6 @@ export interface ChatSearchResult {
   type: 'dm' | 'group'
   id: number
   name: string
+  avatar_url: string
 }
 

@@ -31,7 +31,6 @@ interface RequestConfig extends RequestInit {
       }
   
       const headers: HeadersInit = {
-        'Content-Type': 'application/json',
         ...(auth && { Authorization: `Bearer ${localStorage.getItem('token')}` }),
         ...config.headers,
       }
@@ -61,18 +60,15 @@ interface RequestConfig extends RequestInit {
         ...config,
         method: 'POST',
         body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json', ...config?.headers },
       })
     }
-  
-    protected put<T>(endpoint: string, data?: unknown, config?: RequestConfig) {
+
+    protected postFile<T>(endpoint: string, data?: FormData, config?: RequestConfig) {
       return this.request<T>(endpoint, {
         ...config,
-        method: 'PUT',
-        body: JSON.stringify(data),
+        method: 'POST',
+        body: data,
       })
-    }
-  
-    protected delete<T>(endpoint: string, config?: RequestConfig) {
-      return this.request<T>(endpoint, { ...config, method: 'DELETE' })
     }
   }

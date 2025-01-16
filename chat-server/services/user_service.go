@@ -5,16 +5,23 @@ import (
 )
 
 type userService struct {
-	userRepository models.UserRepository
+	userRepository    models.UserRepository
 	messageRepository models.MessageRepository
-	chatRepository models.ChatRepository
+	chatRepository    models.ChatRepository
+	authService       models.AuthService
 }
 
-func NewUserService(userRepository models.UserRepository, messageRepository models.MessageRepository, chatRepository models.ChatRepository) *userService {
+func NewUserService(
+	userRepository models.UserRepository,
+	messageRepository models.MessageRepository,
+	chatRepository models.ChatRepository,
+	authService models.AuthService,
+) *userService {
 	return &userService{
-		userRepository: userRepository,
+		userRepository:    userRepository,
 		messageRepository: messageRepository,
-		chatRepository: chatRepository,
+		chatRepository:    chatRepository,
+		authService:       authService,
 	}
 }
 
@@ -49,4 +56,18 @@ func (s *userService) GetChats(userID uint) ([]models.Chat, *models.AppError) {
 		return nil, models.ErrServerError
 	}
 	return chats, nil
+}
+
+func (s *userService) UpdateAvatar(userID uint, avatarURL string) (string, *models.AppError) {
+	err := s.userRepository.UpdateAvatar(userID, avatarURL)
+	if err != nil {
+		return "", models.ErrServerError
+	}
+
+	user, err := s.userRepository.GetUserById(userID)
+	if err != nil {
+		return "", models.ErrServerError
+	}
+
+	return s.authService.CreateTokenForUser(user)
 }

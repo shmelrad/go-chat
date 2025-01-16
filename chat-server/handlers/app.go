@@ -26,6 +26,7 @@ func InitRoutes(r *gin.Engine, authMiddleware gin.HandlerFunc, messageService mo
 	}
 
 	r.Use(middlewares.CorsMiddleware())
+	r.Static("/assets/images", "./assets/images")
 	// anonymous routes
 	ag := r.Group("/api/auth")
 	ag.POST("/login", app.LoginUser)
@@ -37,8 +38,9 @@ func InitRoutes(r *gin.Engine, authMiddleware gin.HandlerFunc, messageService mo
 	mg.GET("/", app.GetMessageHistory)
 
 	ug := r.Group("/api/users")
-	ug.GET("/chats", app.GetChats)	
+	ug.GET("/chats", app.GetChats)
 	ug.GET("/search", app.SearchUsers)
+	ug.POST("/avatar", app.UploadAvatar)
 
 	ch := r.Group("/api/chats")
 	ch.GET("/:chat_id", app.GetChatById)

@@ -48,6 +48,18 @@ func (s *authService) RegisterUser(email, username, password string) (*models.Us
 	return createdUser, nil
 }
 
+func (s *authService) createToken(user *models.User) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"username":   user.Username,
+		"email":      user.Email,
+		"sub":        user.ID,
+		"avatar_url": user.AvatarURL,
+		"exp":        time.Now().Add(time.Hour * 1).Unix(),
+	})
+
+	return token.SignedString([]byte(s.secret))
+}
+
 func (s *authService) LoginUser(username, password string) (string, *models.AppError) {
 	user, err := s.userRepository.GetUserByUsername(username)
 	if err != nil {
@@ -58,17 +70,18 @@ func (s *authService) LoginUser(username, password string) (string, *models.AppE
 		return "", models.ErrInvalidCredentials
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": user.Username,
-		"email":    user.Email,
-		"sub":      user.ID,
-		"exp":      time.Now().Add(time.Hour * 1).Unix(),
-	})
-
-	tokenString, err := token.SignedString([]byte(s.secret))
+	tokenString, err := s.createToken(user)
 	if err != nil {
 		return "", models.ErrServerError
 	}
 
+	return tokenString, nil
+}
+
+func (s *authService) CreateTokenForUser(user *models.User) (string, *models.AppError) {
+	tokenString, err := s.createToken(user)
+	if err != nil {
+		return "", models.ErrServerError
+	}
 	return tokenString, nil
 }
