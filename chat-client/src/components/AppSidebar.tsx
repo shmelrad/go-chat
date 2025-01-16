@@ -1,4 +1,4 @@
-import { Search } from "lucide-react"
+import { Search, Plus } from "lucide-react"
 import {
     Sidebar,
     SidebarContent,
@@ -116,8 +116,8 @@ export function AppSidebar() {
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            <ProfileModal 
-                                open={isProfileOpen} 
+                            <ProfileModal
+                                open={isProfileOpen}
                                 onOpenChange={setIsProfileOpen}
                             />
                             <Input
@@ -158,6 +158,16 @@ export function AppSidebar() {
                 )}
                 {!query && (
                     <SidebarGroup>
+                        <div className="flex justify-between items-center pl-4 pt-2">
+                            <span className="text-sm font-medium cursor-default">Chats</span>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Create a new chat"
+                            >
+                                <Plus className="h-4 w-4" />
+                            </Button>
+                        </div>
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 {isError || !chats?.chats ? (
