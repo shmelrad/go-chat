@@ -7,22 +7,39 @@ const (
 	ChatTypeGroup ChatType = "group"
 )
 
+type ChatUserRole string
+
+const (
+	ChatRoleMember ChatUserRole = "member"
+	ChatRoleAdmin  ChatUserRole = "admin"
+)
+
 // Combined entity for both DM and group chats
 type Chat struct {
 	BaseModel
-	Type          ChatType  `json:"type" gorm:"type:varchar(10);not null"`
-	Name          string    `json:"name,omitempty" gorm:"type:varchar(100)"`
-	LastMessageID *uint     `json:"last_message_id"`
-	LastMessage   *Message  `json:"last_message" gorm:"foreignKey:LastMessageID"`
-	Members       []User    `json:"members" gorm:"many2many:chat_members;"`
-	Messages      []Message `json:"messages" gorm:"constraint:OnDelete:CASCADE;"`
+	Type          ChatType      `json:"type" gorm:"type:varchar(10);not null"`
+	Name          string        `json:"name,omitempty" gorm:"type:varchar(100)"`
+	LastMessageID *uint         `json:"last_message_id"`
+	LastMessage   *Message      `json:"last_message" gorm:"foreignKey:LastMessageID"`
+	Members       []ChatMember  `json:"members" gorm:"foreignKey:ChatID"`
+	Messages      []Message     `json:"messages" gorm:"constraint:OnDelete:CASCADE;"`
+	Settings      GroupSettings `json:"settings" gorm:"foreignKey:ChatID"`
+}
+
+type ChatMember struct {
+	BaseModel
+	ChatID uint         `json:"chat_id" gorm:"primaryKey"`
+	UserID uint         `json:"user_id" gorm:"primaryKey"`
+	Role   ChatUserRole `json:"role" gorm:"type:varchar(20);not null;default:'member'"`
+	Chat   Chat         `json:"chat" gorm:"foreignKey:ChatID"`
+	User   User         `json:"user" gorm:"foreignKey:UserID"`
 }
 
 // Settings for group chats
 type GroupSettings struct {
 	BaseModel
 	ChatID      uint   `json:"chat_id" gorm:"uniqueIndex"`
-	Chat        Chat   `gorm:"foreignKey:ChatID;constraint:OnDelete:CASCADE;"`
+	Chat        *Chat  `gorm:"foreignKey:ChatID;constraint:OnDelete:CASCADE;"`
 	Description string `json:"description"`
 	IsPublic    bool   `json:"is_public"`
 }

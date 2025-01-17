@@ -2,11 +2,11 @@ package models
 
 type User struct {
 	BaseModel
-	Username     string `json:"username" gorm:"unique;not null"`
-	Email        string `json:"-" gorm:"unique;not null"`
-	PasswordHash string `json:"-" gorm:"not null"`
-	AvatarURL    string `json:"avatar_url"`
-	Chats        []Chat `gorm:"many2many:chat_members;"`
+	Username     string       `json:"username" gorm:"unique;not null"`
+	Email        string       `json:"-" gorm:"unique;not null"`
+	PasswordHash string       `json:"-" gorm:"not null"`
+	AvatarURL    string       `json:"avatar_url"`
+	Chats        []Chat       `json:"chats" gorm:"many2many:chat_members;joinForeignKey:UserID;JoinReferences:ChatID"`
 }
 
 type UserService interface {

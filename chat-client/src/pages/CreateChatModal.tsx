@@ -8,26 +8,31 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState } from "react"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { chatsApi } from "@/lib/api/chats"
 import { toast } from "sonner"
-import { useNavigate } from "react-router-dom"
+import { Chat } from "@/types/chat"
 
 interface CreateChatModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    openChat: (id: number, type: "dm" | "group", name: string, isChatId: boolean, avatarUrl: string) => void
 }
 
-export function CreateChatModal({ open, onOpenChange }: CreateChatModalProps) {
+export function CreateChatModal({ open, onOpenChange, openChat }: CreateChatModalProps) {
     const [name, setName] = useState("")
-    const navigate = useNavigate()
+    const queryClient = useQueryClient()
 
     const createChatMutation = useMutation({
         mutationFn: () => chatsApi.createGroupChat({ name }),
         onSuccess: (data) => {
             toast.success('Chat created successfully')
-            navigate(`/chat/${data.chat.id}?type=group&name=${data.chat.name}&isChatId=true`)
+            openChat(data.chat.id, "group", data.chat.name, true, data.chat.settings.avatar_url)
             onOpenChange(false)
+            
+            queryClient.setQueryData(['user-chats'], (old: { chats: Chat[] } | undefined) => ({
+                chats: [data.chat, ...(old?.chats || [])]
+            }))
         },
         onError: (error: Error) => {
             toast.error(`Failed to create chat: ${error.message}`)

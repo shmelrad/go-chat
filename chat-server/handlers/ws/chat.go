@@ -62,7 +62,7 @@ func (h *Hub) broadcastToChat(chatID uint, message models.WebSocketMessage) erro
 	}
 
 	for _, user := range chat.Members {
-		client, ok := h.clients[user.ID]
+		client, ok := h.clients[user.UserID]
 		if !ok {
 			continue
 		}

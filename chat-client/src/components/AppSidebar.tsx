@@ -23,6 +23,8 @@ import { Button } from "./ui/button"
 import { DarkModeSwitch } from "./ui/dark-mode-switch"
 import { ProfileModal } from "@/pages/ProfileModal"
 import { CreateChatModal } from "@/pages/CreateChatModal"
+import { Chat } from "@/types/chat"
+import { User } from "@/types/user"
 
 export function AppSidebar() {
     const { state, setOpen } = useSidebar()
@@ -51,23 +53,6 @@ export function AppSidebar() {
         mutationFn: (query: string) => usersApi.searchUsers({ q: query, offset: 0 }),
     })
 
-    const formatTime = (timestamp: string) => {
-        const date = new Date(timestamp)
-        const now = new Date()
-        const diff = now.getTime() - date.getTime()
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-
-        if (days === 0) {
-            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-        } else if (days === 1) {
-            return 'Yesterday'
-        } else if (days < 7) {
-            return date.toLocaleDateString('en-US', { weekday: 'short' })
-        } else {
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        }
-    }
-
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
         setQuery(value)
@@ -89,6 +74,7 @@ export function AppSidebar() {
         navigate(`/chat/${id}?type=${type}&name=${name}&isChatId=${isChatId}&avatarUrl=${avatarUrl}`)
         setQuery("")
     }
+
 
     return (
         <Sidebar collapsible="icon">
@@ -178,51 +164,122 @@ export function AppSidebar() {
                                         Failed to load chats: {error?.toString()}
                                     </div>
                                 ) : (chats?.chats.map((chat) => {
-                                    const recipient = chat.members.find(member => member.id !== user?.id)
-                                    return (
-                                        <SidebarMenuItem key={chat.id}>
-                                            <SidebarMenuButton asChild>
-                                                <button
-                                                    onClick={() => openChat(chat.id, chat.type, recipient?.username ?? chat.name, true, recipient?.avatar_url ?? "")}
-                                                    className="flex items-center gap-3 px-2 py-1 h-fit w-full"
-                                                >
-                                                    <Avatar>
-                                                        <AvatarImage src={recipient?.avatar_url} />
-                                                        <AvatarFallback>{recipient?.username[0] ?? chat.name[0]}</AvatarFallback>
-                                                    </Avatar>
-                                                    {!isCollapsed && (
-                                                        <div className="flex flex-1 min-w-0">
-                                                            <div className="w-full overflow-hidden">
-                                                                <div className="flex justify-between items-center">
-                                                                    <span className="font-medium truncate">
-                                                                        {recipient?.username ?? chat.name}
-                                                                    </span>
-                                                                    <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                                                                        {formatTime(chat.last_message?.created_at ?? chat.updated_at)}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="w-full overflow-hidden">
-                                                                    <span className="text-sm text-muted-foreground truncate inline-block w-full">
-                                                                        {chat.last_message?.content ?? "No messages yet"}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </button>
-                                            </SidebarMenuButton>
-                                        </SidebarMenuItem>
-                                    )
+                                    if (!user) return null
+                                    if (chat.type === 'dm') {
+                                        return <DmSidebarItem chat={chat} isCollapsed={isCollapsed} openChat={openChat} user={user} key={chat.id} />
+                                    } else {
+                                        return <GroupChatSidebarItem chat={chat} isCollapsed={isCollapsed} openChat={openChat} key={chat.id} />
+                                    }
                                 }))}
                             </SidebarMenu>
                         </SidebarGroupContent>
                     </SidebarGroup>
                 )}
             </SidebarContent>
-            <CreateChatModal 
+            <CreateChatModal
                 open={isCreateChatOpen}
                 onOpenChange={setIsCreateChatOpen}
+                openChat={openChat}
             />
         </Sidebar>
     )
+}
+
+type SidebarItemProps = {
+    chat: Chat,
+    isCollapsed: boolean,
+    openChat: (id: number, type: 'dm' | 'group', name: string, isChatId: boolean, avatarUrl: string) => void,
+    user: User
+}
+
+const DmSidebarItem = ({ chat, isCollapsed, openChat, user }: SidebarItemProps) => {
+    const recipient = chat.members.find(member => member.user.id !== user?.id)
+    return (
+        <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+                <button
+                    onClick={() => openChat(chat.id, chat.type, recipient?.user.username ?? "", true, recipient?.user.avatar_url ?? "")}
+                    className="flex items-center gap-3 px-2 py-1 h-fit w-full"
+                >
+                    <Avatar>
+                        <AvatarImage src={recipient?.user.avatar_url} />
+                        <AvatarFallback>{recipient?.user.username[0]}</AvatarFallback>
+                    </Avatar>
+                    {!isCollapsed && (
+                        <div className="flex flex-1 min-w-0">
+                            <div className="w-full overflow-hidden">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-medium truncate">
+                                        {recipient?.user.username}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                                        {formatTime(chat.last_message?.created_at ?? chat.updated_at)}
+                                    </span>
+                                </div>
+                                <div className="w-full overflow-hidden">
+                                    <span className="text-sm text-muted-foreground truncate inline-block w-full">
+                                        {chat.last_message?.content ?? "No messages yet"}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </button>
+            </SidebarMenuButton>
+        </SidebarMenuItem>
+    )
+}
+
+const GroupChatSidebarItem = ({ chat, isCollapsed, openChat }: Omit<SidebarItemProps, 'user'>) => {
+    return (
+        <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+                <button
+                    onClick={() => openChat(chat.id, chat.type, chat.name, true, chat.settings.avatar_url)}
+                    className="flex items-center gap-3 px-2 py-1 h-fit w-full"
+                >
+                    <Avatar>
+                        <AvatarImage src={chat.settings.avatar_url} />
+                        <AvatarFallback>{chat.name[0]}</AvatarFallback>
+                    </Avatar>
+                    {!isCollapsed && (
+                        <div className="flex flex-1 min-w-0">
+                            <div className="w-full overflow-hidden">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-medium truncate">
+                                        {chat.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                                        {formatTime(chat.last_message?.created_at ?? chat.updated_at)}
+                                    </span>
+                                </div>
+                                <div className="w-full overflow-hidden">
+                                    <span className="text-sm text-muted-foreground truncate inline-block w-full">
+                                        {chat.last_message?.content ?? "No messages yet"}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </button>
+            </SidebarMenuButton>
+        </SidebarMenuItem>
+    )
+}
+
+const formatTime = (timestamp: string) => {
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+    if (days === 0) {
+        return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+    } else if (days === 1) {
+        return 'Yesterday'
+    } else if (days < 7) {
+        return date.toLocaleDateString('en-US', { weekday: 'short' })
+    } else {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    }
 }

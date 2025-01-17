@@ -84,7 +84,7 @@ func (r *userRepository) SearchUsers(query string, limit int, offset int) ([]mod
 
 func (r *userRepository) GetChats(userID uint) ([]models.Chat, error) {
 	var user models.User
-	if err := r.db.Preload("Chats.Members").Preload("Chats.LastMessage").First(&user, userID).Error; err != nil {
+	if err := r.db.Preload("Chats.Members.User").Preload("Chats.LastMessage").First(&user, userID).Error; err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 	return user.Chats, nil

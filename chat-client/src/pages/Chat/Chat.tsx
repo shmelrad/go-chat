@@ -11,9 +11,8 @@ import { toast } from 'sonner'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { chatsApi } from '@/lib/api/chats'
 import { ApiErrorResponse } from '@/lib/api/base'
-import { User } from '@/types/user'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Chat } from '@/types/chat'
+import { Chat, ChatMember } from '@/types/chat'
 
 export default function ChatPage() {
   const { chatId } = useParams()
@@ -47,12 +46,13 @@ export default function ChatPage() {
     return <DmChat name={name} recipientId={parseInt(chatId)} avatarUrl={avatarUrl ?? ""} />
   }
 
-  return <GroupChat />
+  return <GroupChat name={name} chatId={parseInt(chatId)} avatarUrl={avatarUrl ?? ""} />
 }
 
+// TODO: remove repetition
 function DmChat({ name, recipientId, chatId, avatarUrl }: { name: string, recipientId?: number, chatId?: number, avatarUrl: string }) {
   const { token, user } = useAuthStore((state) => state)
-  const [recipient, setRecipient] = useState<User | null>(null)
+  const [recipient, setRecipient] = useState<ChatMember | null>(null)
   const queryClient = useQueryClient()
   const [isSending, setIsSending] = useState(false)
 
@@ -156,7 +156,7 @@ function DmChat({ name, recipientId, chatId, avatarUrl }: { name: string, recipi
                 message={msg}
                 isCurrentUser={msg.user_id === user?.id}
                 side={msg.user_id === user?.id ? 'right' : 'left'}
-                user={msg.user_id === user?.id ? user : recipient}
+                user={msg.user_id === user?.id ? user : recipient.user}
               />
             ))}
           </div>
@@ -174,8 +174,125 @@ function DmChat({ name, recipientId, chatId, avatarUrl }: { name: string, recipi
   )
 }
 
-function GroupChat() {
-  return <div>Not yet implemented</div>
+function GroupChat({ name, chatId, avatarUrl }: { name: string, chatId?: number, avatarUrl: string }) {
+  const { token, user } = useAuthStore((state) => state)
+  const queryClient = useQueryClient()
+  const [isSending, setIsSending] = useState(false)
+
+  const { data: chat } = useQuery({
+    queryKey: ['chat', chatId],
+    queryFn: async () => {
+      try {
+        if (chatId) {
+          return (await chatsApi.getChat(chatId)).chat
+        }
+        throw new Error('No chat ID provided')
+      } catch (error: unknown) {
+        if ((error as ApiErrorResponse).code === 404) {
+          throw new Error('Chat not found')
+        }
+        throw error
+      }
+    }
+  })
+
+  const { data: messagesData } = useQuery({
+    queryKey: ['messages', chat?.id],
+    queryFn: () => messagesApi.getMessages(chat?.id),
+    enabled: !!chat?.id
+  })
+
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+
+  const { sendMessage: sendWebSocketMessage } = useWebSocket(
+    `ws://localhost:8080/ws?access_token=${token}`,
+    {
+      onMessage: (event) => {
+        try {
+          const message = JSON.parse(event.data)
+          switch (message.action) {
+            case 'new_message':
+              setIsSending(false)
+              queryClient.setQueryData(['messages', chat?.id], (old: MessagesResponse | undefined) => ({
+                messages: [...(old?.messages || []), message.data.message]
+              }))
+
+              queryClient.setQueryData(['user-chats'], (old: { chats: Chat[] } | undefined) => {
+                if (!old) return { chats: [] }
+                return {
+                  chats: old.chats.map(c => {
+                    if (c.id === chat?.id) {
+                      return {
+                        ...c,
+                        last_message: message.data.message
+                      }
+                    }
+                    return c
+                  })
+                }
+              })
+              break;
+            case 'send_message_error':
+              setIsSending(false)
+              toast.error(`Failed to send message: ${message.data.error}`)
+              break;
+          }
+        } catch (error) {
+          console.error('Failed to parse WebSocket message:', error)
+          setIsSending(false)
+        }
+      }
+    }
+  )
+
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messagesData?.messages])
+
+  return (
+    <ChatLayout header={<ChatHeader name={name} avatarUrl={avatarUrl ?? ""} />}>
+      <div className="flex flex-col h-full">
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto p-4 bg-gradient-to-br from-sky-400 to-sky-500 scroll-smooth"
+        >
+          <div className="flex flex-col gap-2">
+            {messagesData?.messages.map((msg) => {
+              const messageUser = chat?.members.find(member => member.user.id === msg.user_id)
+              if (!messageUser) {
+                console.error('Message user not found')
+                return null
+              }
+              
+              return (
+                <MessageView
+                  key={msg.id}
+                  message={msg}
+                  isCurrentUser={msg.user_id === user?.id}
+                  side={msg.user_id === user?.id ? 'right' : 'left'}
+                  user={messageUser.user}
+                />
+              )
+            })}
+          </div>
+        </div>
+        <TextEditor
+          sendWebSocketMessage={(msg) => {
+            setIsSending(true)
+            sendWebSocketMessage(msg)
+          }}
+          chat={chat!}
+          isSending={isSending}
+        />
+      </div>
+    </ChatLayout>
+  )
 }
 
 const ChatHeader = ({ name, avatarUrl }: { name: string, avatarUrl: string }) => {

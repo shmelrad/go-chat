@@ -25,9 +25,9 @@ func (r *chatRepository) ChatExists(id uint) (bool, error) {
 func (r *chatRepository) CreateDmByUsers(senderID uint, receiverID uint) (*models.Chat, error) {
 	chat := models.Chat{
 		Type: models.ChatTypeDM,
-		Members: []models.User{
-			{BaseModel: models.BaseModel{ID: senderID}},
-			{BaseModel: models.BaseModel{ID: receiverID}},
+		Members: []models.ChatMember{
+			{UserID: senderID, Role: models.ChatRoleMember},
+			{UserID: receiverID, Role: models.ChatRoleMember},
 		},
 	}
 
@@ -44,7 +44,7 @@ func (r *chatRepository) CreateDmByUsers(senderID uint, receiverID uint) (*model
 
 func (r *chatRepository) GetById(id uint) (*models.Chat, error) {
 	var chat models.Chat
-	if err := r.db.Preload("Members").Preload("LastMessage").First(&chat, id).Error; err != nil {
+	if err := r.db.Preload("Members.User").Preload("LastMessage").First(&chat, id).Error; err != nil {
 		return nil, err
 	}
 	return &chat, nil
@@ -59,7 +59,7 @@ func (r *chatRepository) GetDmByIds(userID uint, recipientID uint) (*models.Chat
 	err := r.db.Joins("JOIN chat_members cm1 ON cm1.chat_id = chats.id AND cm1.user_id = ?", userID).
 		Joins("JOIN chat_members cm2 ON cm2.chat_id = chats.id AND cm2.user_id = ?", recipientID).
 		Where("chats.type = ?", models.ChatTypeDM).
-		Preload("Members").
+		Preload("Members.User").
 		First(&chat).Error
 	if err != nil {
 		return nil, err
@@ -71,8 +71,8 @@ func (r *chatRepository) CreateGroupChat(creatorID uint, name string) (*models.C
 	chat := models.Chat{
 		Type: models.ChatTypeGroup,
 		Name: name,
-		Members: []models.User{
-			{BaseModel: models.BaseModel{ID: creatorID}},
+		Members: []models.ChatMember{
+			{UserID: creatorID, Role: models.ChatRoleAdmin},
 		},
 	}
 
