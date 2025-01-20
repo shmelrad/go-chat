@@ -165,11 +165,15 @@ export function AppSidebar() {
                                     </div>
                                 ) : (chats?.chats.map((chat) => {
                                     if (!user) return null
-                                    if (chat.type === 'dm') {
-                                        return <DmSidebarItem chat={chat} isCollapsed={isCollapsed} openChat={openChat} user={user} key={chat.id} />
-                                    } else {
-                                        return <GroupChatSidebarItem chat={chat} isCollapsed={isCollapsed} openChat={openChat} key={chat.id} />
-                                    }
+                                    return (
+                                        <ChatSidebarItem 
+                                            chat={chat} 
+                                            isCollapsed={isCollapsed} 
+                                            openChat={openChat} 
+                                            user={user} 
+                                            key={chat.id} 
+                                        />
+                                    )
                                 }))}
                             </SidebarMenu>
                         </SidebarGroupContent>
@@ -192,62 +196,35 @@ type SidebarItemProps = {
     user: User
 }
 
-const DmSidebarItem = ({ chat, isCollapsed, openChat, user }: SidebarItemProps) => {
-    const recipient = chat.members.find(member => member.user.id !== user?.id)
-    return (
-        <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-                <button
-                    onClick={() => openChat(chat.id, chat.type, recipient?.user.username ?? "", true, recipient?.user.avatar_url ?? "")}
-                    className="flex items-center gap-3 px-2 py-1 h-fit w-full"
-                >
-                    <Avatar>
-                        <AvatarImage src={recipient?.user.avatar_url} />
-                        <AvatarFallback>{recipient?.user.username[0]}</AvatarFallback>
-                    </Avatar>
-                    {!isCollapsed && (
-                        <div className="flex flex-1 min-w-0">
-                            <div className="w-full overflow-hidden">
-                                <div className="flex justify-between items-center">
-                                    <span className="font-medium truncate">
-                                        {recipient?.user.username}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                                        {formatTime(chat.last_message?.created_at ?? chat.updated_at)}
-                                    </span>
-                                </div>
-                                <div className="w-full overflow-hidden">
-                                    <span className="text-sm text-muted-foreground truncate inline-block w-full">
-                                        {chat.last_message?.content ?? "No messages yet"}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </button>
-            </SidebarMenuButton>
-        </SidebarMenuItem>
-    )
-}
+const ChatSidebarItem = ({ chat, isCollapsed, openChat, user }: SidebarItemProps) => {
+    const isDm = chat.type === 'dm'
+    const recipient = isDm ? chat.members.find(member => member.user.id !== user?.id) : null
+    const name = isDm ? recipient?.user.username : chat.name
+    const avatarUrl = isDm ? recipient?.user.avatar_url : chat.settings.avatar_url
 
-const GroupChatSidebarItem = ({ chat, isCollapsed, openChat }: Omit<SidebarItemProps, 'user'>) => {
     return (
         <SidebarMenuItem>
             <SidebarMenuButton asChild>
                 <button
-                    onClick={() => openChat(chat.id, chat.type, chat.name, true, chat.settings.avatar_url)}
+                    onClick={() => openChat(
+                        chat.id,
+                        chat.type,
+                        name ?? "",
+                        true,
+                        avatarUrl ?? ""
+                    )}
                     className="flex items-center gap-3 px-2 py-1 h-fit w-full"
                 >
                     <Avatar>
-                        <AvatarImage src={chat.settings.avatar_url} />
-                        <AvatarFallback>{chat.name[0]}</AvatarFallback>
+                        <AvatarImage src={avatarUrl} />
+                        <AvatarFallback>{name?.[0]}</AvatarFallback>
                     </Avatar>
                     {!isCollapsed && (
                         <div className="flex flex-1 min-w-0">
                             <div className="w-full overflow-hidden">
                                 <div className="flex justify-between items-center">
                                     <span className="font-medium truncate">
-                                        {chat.name}
+                                        {name}
                                     </span>
                                     <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
                                         {formatTime(chat.last_message?.created_at ?? chat.updated_at)}
