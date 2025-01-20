@@ -41,16 +41,21 @@ export default function ChatPage() {
 
   if (type === 'dm') {
     if (isChatId) {
-      return <DmChat name={name} chatId={parseInt(chatId)} avatarUrl={avatarUrl ?? ""} />
+      return <ChatView type="dm" name={name} chatId={parseInt(chatId)} avatarUrl={avatarUrl ?? ""} />
     }
-    return <DmChat name={name} recipientId={parseInt(chatId)} avatarUrl={avatarUrl ?? ""} />
+    return <ChatView type="dm" name={name} recipientId={parseInt(chatId)} avatarUrl={avatarUrl ?? ""} />
   }
 
-  return <GroupChat name={name} chatId={parseInt(chatId)} avatarUrl={avatarUrl ?? ""} />
+  return <ChatView type="group" name={name} chatId={parseInt(chatId)} avatarUrl={avatarUrl ?? ""} />
 }
 
-// TODO: remove repetition
-function DmChat({ name, recipientId, chatId, avatarUrl }: { name: string, recipientId?: number, chatId?: number, avatarUrl: string }) {
+function ChatView({ name, recipientId, chatId, avatarUrl, type }: { 
+  name: string, 
+  recipientId?: number, 
+  chatId?: number, 
+  avatarUrl: string,
+  type: 'dm' | 'group'
+}) {
   const { token, user } = useAuthStore((state) => state)
   const [recipient, setRecipient] = useState<ChatMember | null>(null)
   const queryClient = useQueryClient()
@@ -62,133 +67,17 @@ function DmChat({ name, recipientId, chatId, avatarUrl }: { name: string, recipi
       try {
         if (chatId) {
           return (await chatsApi.getChat(chatId)).chat
-        } else if (recipientId) {
+        } else if (recipientId && type === 'dm') {
           return (await chatsApi.getDmWithUser(recipientId)).chat
         }
         throw new Error('No chat ID or recipient ID provided')
       } catch (error: unknown) {
-        if ((error as ApiErrorResponse).code === 404 && recipientId) {
-          const newChat = (await chatsApi.createDmWithUser(recipientId)).chat
-          queryClient.invalidateQueries({ queryKey: ['user-chats'] })
-          return newChat
-        }
-        throw error
-      }
-    }
-  })
-
-  useEffect(() => {
-    if (chat && chat.members) {
-      setRecipient(chat.members.find(member => member.id !== user?.id)!)
-    }
-  }, [chat, user])
-
-  const { data: messagesData } = useQuery({
-    queryKey: ['messages', chat?.id],
-    queryFn: () => messagesApi.getMessages(chat?.id),
-    enabled: !!chat?.id
-  })
-
-  const messagesContainerRef = useRef<HTMLDivElement>(null)
-
-  const { sendMessage: sendWebSocketMessage } = useWebSocket(
-    `ws://localhost:8080/ws?access_token=${token}`,
-    {
-      onMessage: (event) => {
-        try {
-          const message = JSON.parse(event.data)
-          switch (message.action) {
-            case 'new_message':
-              setIsSending(false)
-              queryClient.setQueryData(['messages', chat?.id], (old: MessagesResponse | undefined) => ({
-                messages: [...(old?.messages || []), message.data.message]
-              }))
-
-              queryClient.setQueryData(['user-chats'], (old: { chats: Chat[] } | undefined) => {
-                if (!old) return { chats: [] }
-                return {
-                  chats: old.chats.map(c => {
-                    if (c.id === chat?.id) {
-                      return {
-                        ...c,
-                        last_message: message.data.message
-                      }
-                    }
-                    return c
-                  })
-                }
-              })
-              break;
-            case 'send_message_error':
-              setIsSending(false)
-              toast.error(`Failed to send message: ${message.data.error}`)
-              break;
-          }
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error)
-          setIsSending(false)
-        }
-      }
-    }
-  )
-
-  const scrollToBottom = () => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
-    }
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messagesData?.messages])
-
-  return (
-    <ChatLayout header={<ChatHeader name={name} avatarUrl={avatarUrl ?? ""} />}>
-      <div className="flex flex-col h-full">
-        <div
-          ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto p-4 bg-gradient-to-br from-sky-400 to-sky-500 scroll-smooth"
-        >
-          <div className="flex flex-col gap-2">
-            {recipient && messagesData?.messages.map((msg) => (
-              <MessageView
-                key={msg.id}
-                message={msg}
-                isCurrentUser={msg.user_id === user?.id}
-                side={msg.user_id === user?.id ? 'right' : 'left'}
-                user={msg.user_id === user?.id ? user : recipient.user}
-              />
-            ))}
-          </div>
-        </div>
-        <TextEditor
-          sendWebSocketMessage={(msg) => {
-            setIsSending(true)
-            sendWebSocketMessage(msg)
-          }}
-          chat={chat!}
-          isSending={isSending}
-        />
-      </div>
-    </ChatLayout>
-  )
-}
-
-function GroupChat({ name, chatId, avatarUrl }: { name: string, chatId?: number, avatarUrl: string }) {
-  const { token, user } = useAuthStore((state) => state)
-  const queryClient = useQueryClient()
-  const [isSending, setIsSending] = useState(false)
-
-  const { data: chat } = useQuery({
-    queryKey: ['chat', chatId],
-    queryFn: async () => {
-      try {
-        if (chatId) {
-          return (await chatsApi.getChat(chatId)).chat
-        }
-        throw new Error('No chat ID provided')
-      } catch (error: unknown) {
         if ((error as ApiErrorResponse).code === 404) {
+          if (recipientId && type === 'dm') {
+            const newChat = (await chatsApi.createDmWithUser(recipientId)).chat
+            queryClient.invalidateQueries({ queryKey: ['user-chats'] })
+            return newChat
+          }
           throw new Error('Chat not found')
         }
         throw error
@@ -196,6 +85,12 @@ function GroupChat({ name, chatId, avatarUrl }: { name: string, chatId?: number,
     }
   })
 
+  useEffect(() => {
+    if (chat?.members && type === 'dm') {
+      setRecipient(chat.members.find(member => member.id !== user?.id)!)
+    }
+  }, [chat, user, type])
+
   const { data: messagesData } = useQuery({
     queryKey: ['messages', chat?.id],
     queryFn: () => messagesApi.getMessages(chat?.id),
@@ -256,7 +151,7 @@ function GroupChat({ name, chatId, avatarUrl }: { name: string, chatId?: number,
   }, [messagesData?.messages])
 
   return (
-    <ChatLayout header={<ChatHeader name={name} avatarUrl={avatarUrl ?? ""} />}>
+    <ChatLayout header={<ChatHeader name={name} avatarUrl={avatarUrl} />}>
       <div className="flex flex-col h-full">
         <div
           ref={messagesContainerRef}
@@ -264,7 +159,10 @@ function GroupChat({ name, chatId, avatarUrl }: { name: string, chatId?: number,
         >
           <div className="flex flex-col gap-2">
             {messagesData?.messages.map((msg) => {
-              const messageUser = chat?.members.find(member => member.user.id === msg.user_id)
+              const messageUser = type === 'dm' 
+                ? (msg.user_id === user?.id ? user : recipient?.user)
+                : chat?.members.find(member => member.user.id === msg.user_id)?.user
+
               if (!messageUser) {
                 console.error('Message user not found')
                 return null
@@ -276,7 +174,7 @@ function GroupChat({ name, chatId, avatarUrl }: { name: string, chatId?: number,
                   message={msg}
                   isCurrentUser={msg.user_id === user?.id}
                   side={msg.user_id === user?.id ? 'right' : 'left'}
-                  user={messageUser.user}
+                  user={messageUser}
                 />
               )
             })}
