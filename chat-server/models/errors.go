@@ -23,4 +23,7 @@ var (
 	ErrInvalidInput       = NewAppError(400, "invalid input")
 	ErrServerError        = NewAppError(500, "internal server error")
 	ErrNotFound           = NewAppError(404, "not found")
+	ErrUnauthorized       = NewAppError(401, "unauthorized")
+	ErrNotEnoughPermissions = NewAppError(403, "not enough permissions")
+	ErrAlreadyMember      = NewAppError(409, "user already a member of this chat")
 )
