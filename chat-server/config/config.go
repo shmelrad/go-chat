@@ -26,12 +26,13 @@ func InitDB() (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
 
+	db.DisableForeignKeyConstraintWhenMigrating = true
 	if err = db.AutoMigrate(
-		&models.User{},
+		&models.Message{},
 		&models.Chat{},
+		&models.User{},
 		&models.ChatMember{},
 		&models.GroupSettings{},
-		&models.Message{},
 	); err != nil {
 		return nil, fmt.Errorf("error migrating models: %w", err)
 	}
