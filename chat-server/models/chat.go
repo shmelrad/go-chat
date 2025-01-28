@@ -57,6 +57,12 @@ type ChatRepository interface {
 	UpdateLastMessage(id uint, messageID uint) error
 	GetDmByIds(userID uint, recipientID uint) (*Chat, error)
 	CreateGroupChat(creatorID uint, name string) (*Chat, error)
+	UpdateAvatar(chatID uint, avatarURL string) error
+	AddMember(chatID uint, userID uint, role ChatUserRole) (*ChatMember, error)
+	GetMember(chatID uint, userID uint) (*ChatMember, error)
+	IsMember(chatID uint, userID uint) bool
+	IsAdmin(chatID uint, userID uint) bool
+	RemoveParticipant(chatID uint, userID uint) error
 }
 
 type ChatService interface {
@@ -64,4 +70,9 @@ type ChatService interface {
 	CreateDmByUsers(senderID uint, receiverID uint) (*Chat, *AppError)
 	GetChatById(id uint) (*Chat, *AppError)
 	CreateGroupChat(creatorID uint, name string) (*Chat, *AppError)
+	UpdateAvatar(chatID uint, avatarURL string) *AppError
+	AddParticipant(chatID uint, username string) (*ChatMember, *AppError)
+	RemoveParticipant(chatID uint, userID uint) *AppError
+	IsMember(chatID uint, userID uint) bool
+	IsAdmin(chatID uint, userID uint) bool
 }

@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"chat-server/models"
+	"fmt"
+	"log"
 
 	"gorm.io/gorm"
 )
@@ -85,4 +87,68 @@ func (r *chatRepository) CreateGroupChat(creatorID uint, name string) (*models.C
 		return nil, err
 	}
 	return createdChat, nil
+}
+
+func (r *chatRepository) UpdateAvatar(chatID uint, avatarURL string) error {
+	result := r.db.Model(&models.GroupSettings{}).
+		Where("chat_id = ?", chatID).
+		Update("avatar_url", avatarURL)
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to update avatar: %w", result.Error)
+	}
+	return nil
+}
+
+func (r *chatRepository) AddMember(chatID uint, userID uint, role models.ChatUserRole) (*models.ChatMember, error) {
+	member := &models.ChatMember{
+		ChatID: chatID,
+		UserID: userID,
+		Role:   role,
+	}
+
+	if err := r.db.Create(member).Error; err != nil {
+		return nil, fmt.Errorf("failed to add member: %w", err)
+	}
+
+	if err := r.db.Preload("User").First(member, member.ID).Error; err != nil {
+		return nil, fmt.Errorf("failed to load member: %w", err)
+	}
+
+	return member, nil
+}
+
+func (r *chatRepository) GetMember(chatID uint, userID uint) (*models.ChatMember, error) {
+	var member models.ChatMember
+	if err := r.db.Where("chat_id = ? AND user_id = ?", chatID, userID).First(&member).Error; err != nil {
+		return nil, err
+	}
+	return &member, nil
+}
+
+func (r *chatRepository) IsMember(chatID uint, userID uint) bool {
+	var count int64
+	r.db.Model(&models.ChatMember{}).
+		Where("chat_id = ? AND user_id = ?", chatID, userID).
+		Count(&count)
+	return count > 0
+}
+
+func (r *chatRepository) IsAdmin(chatID uint, userID uint) bool {
+	var member models.ChatMember
+	r.db.Where("chat_id = ? AND user_id = ?", chatID, userID).First(&member)
+	log.Println(member.UserID)
+	log.Println(member.ChatID)
+	log.Println(member.Role)
+	return member.Role == models.ChatRoleAdmin
+}
+
+func (r *chatRepository) RemoveParticipant(chatID uint, userID uint) error {
+	result := r.db.Where("chat_id = ? AND user_id = ?", chatID, userID).
+		Delete(&models.ChatMember{})
+
+	if result.Error != nil {
+		return fmt.Errorf("failed to remove member: %w", result.Error)
+	}
+	return nil
 }

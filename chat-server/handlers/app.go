@@ -47,6 +47,9 @@ func InitRoutes(r *gin.Engine, authMiddleware gin.HandlerFunc, messageService mo
 	ch.GET("/dm-with-user/:recipient_id", app.GetDmWithUser)
 	ch.POST("/create-dm", app.CreateDmWithUser)
 	ch.POST("/create-group-chat", app.CreateGroupChat)
+	ch.POST("/:chat_id/add-participant", app.AddParticipant)
+	ch.POST("/:chat_id/remove-participant/:user_id", app.RemoveParticipant)
+	ch.POST("/:chat_id/upload-avatar", app.UploadChatAvatar)
 
 	hub := ws.NewHub(userService, chatService)
 	go hub.Run()
