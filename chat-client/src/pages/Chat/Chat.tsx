@@ -10,9 +10,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { chatsApi } from '@/lib/api/chats'
-import { ApiErrorResponse } from '@/lib/api/base'
+import { ApiError } from '@/lib/api/base'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Chat, ChatMember } from '@/types/chat'
+import { ChatSettingsModal } from './ChatSettingsModal'
+import Spinner from '@/components/ui/spinner'
 
 export default function ChatPage() {
   const { chatId } = useParams()
@@ -72,7 +74,7 @@ function ChatView({ name, recipientId, chatId, avatarUrl, type }: {
         }
         throw new Error('No chat ID or recipient ID provided')
       } catch (error: unknown) {
-        if ((error as ApiErrorResponse).code === 404) {
+        if ((error as ApiError).code === 404) {
           if (recipientId && type === 'dm') {
             const newChat = (await chatsApi.createDmWithUser(recipientId)).chat
             queryClient.invalidateQueries({ queryKey: ['user-chats'] })
@@ -150,8 +152,15 @@ function ChatView({ name, recipientId, chatId, avatarUrl, type }: {
     scrollToBottom()
   }, [messagesData?.messages])
 
+  if (!chat) {
+    return (
+      <div className="flex items-center justify-center h-full bg-gradient-to-br from-sky-400 to-sky-500">
+        <Spinner />
+      </div>
+    )
+  }
   return (
-    <ChatLayout header={<ChatHeader name={name} avatarUrl={avatarUrl} />}>
+    <ChatLayout header={<ChatHeader name={name} avatarUrl={avatarUrl} chat={chat} isGroup={type === 'group'} />}>
       <div className="flex flex-col h-full">
         <div
           ref={messagesContainerRef}
@@ -185,7 +194,7 @@ function ChatView({ name, recipientId, chatId, avatarUrl, type }: {
             setIsSending(true)
             sendWebSocketMessage(msg)
           }}
-          chat={chat!}
+          chat={chat}
           isSending={isSending}
         />
       </div>
@@ -193,11 +202,16 @@ function ChatView({ name, recipientId, chatId, avatarUrl, type }: {
   )
 }
 
-const ChatHeader = ({ name, avatarUrl }: { name: string, avatarUrl: string }) => {
+const ChatHeader = ({ name, avatarUrl, chat, isGroup }: { name: string, avatarUrl: string, chat: Chat, isGroup: boolean }) => {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
   return (
     <div className="flex items-center py-1">
       <SidebarTrigger />
-      <div className="flex-1 flex justify-center">
+      <div 
+        className={`flex-1 flex justify-center ${isGroup ? 'cursor-pointer' : ''}`} 
+        onClick={() => isGroup && setIsSettingsOpen(true)}
+      >
         <Avatar>
           <AvatarImage src={avatarUrl} />
           <AvatarFallback>{name[0]}</AvatarFallback>
@@ -207,6 +221,13 @@ const ChatHeader = ({ name, avatarUrl }: { name: string, avatarUrl: string }) =>
           <p className="text-sm text-muted-foreground">Online</p>
         </div>
       </div>
+      {chat.type === 'group' && (
+        <ChatSettingsModal 
+          open={isSettingsOpen}
+          onOpenChange={setIsSettingsOpen}
+          chat={chat}
+        />
+      )}
     </div>
   )
 }
