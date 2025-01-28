@@ -5,7 +5,7 @@ interface RequestConfig extends RequestInit {
     params?: Record<string, string | number>
   }
   
-  export interface ApiErrorResponse {
+  export interface ApiError {
     error: string
     code?: number
   }
